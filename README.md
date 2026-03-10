@@ -63,6 +63,28 @@ rm frame_*.png
 
 ## Deployment Strategy
 
+### Git Repository Setup (Raspberry Pi)
+
+To set up the project directly on your Raspberry Pi using Git, follow these steps:
+
+1. Clone the repository into the web server directory:
+```bash
+sudo git clone https://github.com/sudo-self/lockboxpi.git /var/www/
+```
+
+2. Ensure correct permissions are applied so the web server and the bridge service can access the files:
+```bash
+sudo chown -R lockboxpi:www-data /var/www
+sudo chmod -R 755 /var/www
+sudo chmod -R 777 /var/www/dumps
+```
+
+3. Restart the background service to apply the new files:
+```bash
+sudo systemctl restart lockbox-bridge.service
+sudo systemctl reload apache2
+```
+
 ### Remote Refresh Configuration
 
 The `push.sh` script automates the transfer of code and assets. To ensure the TFT display reflects changes immediately, the script uses `xdotool` combined with `XAUTHORITY` to bypass X11 permission locks.
