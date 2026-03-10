@@ -1,5 +1,7 @@
 # Lockboxpi
 
+<img width="981" height="651" alt="lockboxGUI" src="https://github.com/user-attachments/assets/46c7a8af-9055-422b-9e82-8d32661373c4" />
+
 ## Project Overview
 
 LockboxPi is a professional-grade forensic dashboard and hardware control suite designed specifically for a 3.5-inch TFT touch interface on Raspberry Pi. It serves as a unified bridge between mobile forensic tools—specifically **MTKClient** and **LockKnife**—and a web-based management terminal. The system is optimized for high-contrast visibility and touch accuracy in moble environments.
