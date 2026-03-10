@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --base-crust: #0f1012;
+            --plate-surface: #1a1c20;
+            --plate-highlight: #282a2f;
+            --plate-shadow: #08090a;
+            --accent-core: #ff9d00;
+            --text-primary: #e2e4e9;
+            --text-dim: #5d626f;
+            --bevel-outer: 2px 2px 5px var(--plate-shadow), -1px -1px 3px var(--plate-highlight);
+            --bevel-inner: inset 2px 2px 4px var(--plate-shadow), inset -1px -1px 2px var(--plate-highlight);
+        }
+
+        body {
+            background-color: var(--base-crust) !important;
+            color: var(--text-primary) !important;
+            font-family: 'Inter', sans-serif !important;
+            margin: 0;
+            padding: 8px;
+        }
+
+        /* The Header Chassis */
+        .tectonic-nav {
+            background: var(--plate-surface);
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: var(--bevel-outer);
+            border: 1px solid var(--plate-highlight);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .repo-label {
+            font-family: 'JetBrains Mono';
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        .repo-label span { color: var(--accent-core); }
+
+        /* The Tectonic Button */
+        .back-btn {
+            background: var(--plate-surface);
+            box-shadow: var(--bevel-outer);
+            color: var(--text-primary);
+            text-decoration: none;
+            font-family: 'Inter';
+            font-weight: 900;
+            font-size: 10px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: 0.1s;
+        }
+
+        .back-btn:active {
+            box-shadow: var(--bevel-inner);
+            transform: translateY(1px);
+        }
+
+        /* Styling Apache's Table */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 4px;
+            font-size: 12px;
+        }
+
+        th {
+            font-family: 'JetBrains Mono';
+            color: var(--text-dim) !important;
+            text-transform: uppercase;
+            font-size: 9px;
+            padding: 10px;
+            text-align: left;
+        }
+
+        td {
+            background: var(--plate-surface);
+            padding: 12px 10px;
+            border-top: 1px solid var(--plate-highlight);
+            box-shadow: 2px 2px 5px var(--plate-shadow);
+        }
+
+        /* Rounded corners for the "plate" rows */
+        td:first-child { border-radius: 4px 0 0 4px; }
+        td:last-child { border-radius: 0 4px 4px 0; }
+
+        td a {
+            color: var(--accent-core) !important;
+            text-decoration: none;
+            font-family: 'JetBrains Mono';
+            font-weight: 700;
+        }
+
+        /* Hide specific Apache junk */
+        tr:nth-child(2), .indexhead { display: none; }
+        img { filter: invert(1) brightness(0.7); width: 16px; margin-right: 8px; }
+    </style>
+</head>
+<body>
+
+    <div class="tectonic-nav">
+        <div class="repo-label">FIELD_DUMP // <span>REPOSITORY</span></div>
+        <a href="/" class="back-btn">
+            ← DASHBOARD
+        </a>
+    </div>
