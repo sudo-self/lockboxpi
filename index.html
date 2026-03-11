@@ -166,7 +166,6 @@
                 <img src="/dumps/pi.webp" alt="Pi">
                 <span id="brand-text">lockboxpi.local</span>
             </div>
-            <div id="clock">00:00:00</div>
             <div class="dynamic-ip" id="header-ip">0.0.0.0</div>
         </header>
 
@@ -285,12 +284,6 @@
     <script>
         const host = window.location.hostname || "127.0.0.1";
         const bridgeUrl = `http://${host}:5000`;
-
-        function updateClock() {
-            document.getElementById('clock').textContent = new Date().toTimeString().split(' ')[0];
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
 
         function switchTab(tabId, el) {
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
