@@ -110,7 +110,7 @@
         }
         @keyframes subtleGlow {
             0%, 100% { box-shadow: var(--bevel-outer); border-color: var(--plate-highlight); }
-            50% { box-shadow: 0 0 10px rgba(255, 157, 0, 0.3), var(--bevel-outer); border-color: rgba(255, 157, 0, 0.5); }
+            50% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.15), var(--bevel-outer); border-color: rgba(255, 255, 255, 0.3); }
         }
         .github-link-btn {
             background: var(--plate-surface);
@@ -129,7 +129,7 @@
             animation: subtleGlow 4s infinite alternate;
         }
         .bling-text {
-            background: linear-gradient(120deg, var(--text-dim) 30%, var(--accent-core) 45%, #ffffff 50%, var(--accent-core) 55%, var(--text-dim) 70%);
+            background: linear-gradient(120deg, var(--text-dim) 30%, #a3a8b5 45%, #ffffff 50%, #a3a8b5 55%, var(--text-dim) 70%);
             background-size: 200% auto;
             color: transparent;
             -webkit-background-clip: text;
@@ -138,7 +138,7 @@
         }
         .github-link-btn:active { box-shadow: var(--bevel-inner); transform: translateY(1px); animation: none; }
         .github-link-btn svg { fill: var(--text-dim); transition: fill 0.3s; }
-        .github-link-btn:hover svg { fill: var(--accent-core); }
+        .github-link-btn:hover svg { fill: #ffffff; }
 
         .helper-text {
             font-family: 'JetBrains Mono';
