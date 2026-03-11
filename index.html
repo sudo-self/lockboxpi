@@ -31,7 +31,7 @@
             background: var(--plate-surface);
             position: relative;
             display: grid;
-            grid-template-columns: 105px 1fr;
+            grid-template-columns: 115px 1fr;
             grid-template-rows: 45px 1fr;
             padding: 4px;
             border-radius: 8px;
@@ -47,32 +47,32 @@
 
         header {
             grid-column: 1 / span 2; display: flex; align-items: center; justify-content: space-between;
-            padding: 0 15px; background: var(--base-crust); margin: 4px; border-radius: 4px;
-            box-shadow: var(--bevel-inner); font-family: 'JetBrains Mono'; font-size: 13px;
+            padding: 0 17px; background: var(--base-crust); margin: 4px; border-radius: 4px;
+            box-shadow: var(--bevel-inner); font-family: 'JetBrains Mono'; font-size: 15px;
         }
 
         .brand { display: flex; align-items: center; color: var(--safe-core); }
         .brand a { color: inherit; text-decoration: none; }
-        .brand img { width: 18px; height: 18px; margin-right: 8px; }
+        .brand img { width: 20px; height: 20px; margin-right: 8px; }
         .dynamic-ip { color: var(--safe-core); font-weight: 900; }
 
-        nav { display: flex; flex-direction: column; gap: 5px; padding: 4px; }
+        nav { display: flex; flex-direction: column; gap: 7px; padding: 4px; }
         .nav-item {
             flex: 1; background: var(--plate-surface); border-radius: 6px;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             cursor: pointer; box-shadow: var(--bevel-outer); transition: 0.1s;
         }
         .nav-item.active { box-shadow: var(--bevel-inner); background: var(--base-crust); }
-        .nav-item svg { width: 26px; fill: var(--text-dim); margin-bottom: 2px; }
+        .nav-item svg { width: 30px; fill: var(--text-dim); margin-bottom: 2px; }
         .nav-item.active svg { fill: var(--accent-core); filter: drop-shadow(0 0 5px var(--accent-glow)); }
-        .nav-item span { font-size: 11px; font-weight: 900; color: var(--text-dim); }
+        .nav-item span { font-size: 13px; font-weight: 900; color: var(--text-dim); }
 
         .usb-indicator {
-            height: 35px; display: flex; align-items: center; justify-content: center;
-            gap: 8px; font-size: 11px; font-family: 'JetBrains Mono'; font-weight: 900; color: var(--text-dim);
+            height: 39px; display: flex; align-items: center; justify-content: center;
+            gap: 8px; font-size: 13px; font-family: 'JetBrains Mono'; font-weight: 900; color: var(--text-dim);
             margin-top: 5px; border-top: 1px solid var(--plate-highlight); padding-top: 5px;
         }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-core); transition: 0.3s; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent-core); transition: 0.3s; }
         .dot.active { background: var(--safe-core); box-shadow: 0 0 10px var(--safe-core); }
 
         main { background: var(--base-crust); margin: 4px; border-radius: 6px; box-shadow: var(--bevel-inner); padding: 12px; overflow: hidden; }
@@ -90,7 +90,7 @@
         }
 
         .status-orb {
-            width: 75px; height: 75px; border-radius: 50%; background: var(--base-crust);
+            width: 85px; height: 85px; border-radius: 50%; background: var(--base-crust);
             box-shadow: var(--bevel-inner); display: flex; align-items: center; justify-content: center;
             margin-bottom: 8px; transition: 0.3s; cursor: pointer;
         }
@@ -98,15 +98,15 @@
         .status-orb.locked { border: 3px solid var(--danger-core); }
 
         .data-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; }
-        .data-cell { background: var(--plate-surface); padding: 12px 5px; border-radius: 6px; box-shadow: var(--bevel-outer); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .data-cell { background: var(--plate-surface); padding: 14px 5px; border-radius: 6px; box-shadow: var(--bevel-outer); display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .data-cell.action { cursor: pointer; border: 1px solid var(--accent-glow); }
-        .data-label { font-size: 8px; color: var(--text-dim); text-transform: uppercase; font-weight: 900; margin-bottom: 4px; text-align: center; }
-        .data-value { font-family: 'JetBrains Mono'; font-size: 13px; color: var(--indigo-400); font-weight: 700; }
+        .data-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 900; margin-bottom: 4px; text-align: center; }
+        .data-value { font-family: 'JetBrains Mono'; font-size: 15px; color: var(--indigo-400); font-weight: 700; }
         .data-value.accent { color: var(--accent-core); }
 
         .helper-text {
             font-family: 'JetBrains Mono';
-            font-size: 9px;
+            font-size: 11px;
             color: var(--indigo-300);
             margin-top: 10px;
             text-transform: uppercase;
@@ -114,13 +114,13 @@
             text-align: center;
         }
 
-        .terminal { flex: 1; background: #050505; border-radius: 4px; padding: 10px; font-family: 'JetBrains Mono'; font-size: 11px; color: #d1d5db; overflow-y: auto; box-shadow: inset 0 2px 10px #000; }
-        .input-wrap { display: grid; grid-template-columns: 1fr 65px 75px; gap: 6px; margin-top: 10px; height: 45px; }
+        .terminal { flex: 1; background: #050505; border-radius: 4px; padding: 12px; font-family: 'JetBrains Mono'; font-size: 13px; color: #d1d5db; overflow-y: auto; box-shadow: inset 0 2px 10px #000; }
+        .input-wrap { display: grid; grid-template-columns: 1fr 65px 75px; gap: 6px; margin-top: 10px; height: 49px; }
         
         input {
             background: var(--base-crust); border: none; box-shadow: var(--bevel-inner);
-            border-radius: 4px; padding: 0 10px; color: var(--text-primary);
-            font-family: 'JetBrains Mono'; font-size: 13px; outline: none;
+            border-radius: 4px; padding: 0 12px; color: var(--text-primary);
+            font-family: 'JetBrains Mono'; font-size: 15px; outline: none;
             height: 100%; width: 100%;
             pointer-events: auto !important;
         }
@@ -128,7 +128,7 @@
         select {
             background: var(--plate-surface); box-shadow: var(--bevel-outer); border: none;
             border-radius: 4px; color: var(--text-primary); font-weight: 900;
-            font-size: 11px; cursor: pointer; padding: 0; width: 100%; height: 100%;
+            font-size: 13px; cursor: pointer; padding: 0; width: 100%; height: 100%;
             font-family: 'JetBrains Mono'; outline: none; appearance: none; -webkit-appearance: none;
             text-align: center;
         }
@@ -137,7 +137,7 @@
         .btn-action {
             background: var(--plate-surface); box-shadow: var(--bevel-outer); border: none;
             border-radius: 4px; color: var(--text-primary); font-weight: 900;
-            font-size: 11px; cursor: pointer; padding: 0; width: 100%; height: 100%;
+            font-size: 13px; cursor: pointer; padding: 0; width: 100%; height: 100%;
             display: flex; align-items: center; justify-content: center;
         }
         .btn-action:active { box-shadow: var(--bevel-inner); transform: translateY(1px); }
@@ -201,7 +201,7 @@
                             <path fill="#000" d="M 0,0 l 6,0 0,6 -6,0 z M 6,0 l 6,0 0,6 -6,0 z M 12,0 l 6,0 0,6 -6,0 z M 18,0 l 6,0 0,6 -6,0 z M 24,0 l 6,0 0,6 -6,0 z M 30,0 l 6,0 0,6 -6,0 z M 36,0 l 6,0 0,6 -6,0 z M 54,0 l 6,0 0,6 -6,0 z M 78,0 l 6,0 0,6 -6,0 z M 96,0 l 6,0 0,6 -6,0 z M 108,0 l 6,0 0,6 -6,0 z M 114,0 l 6,0 0,6 -6,0 z M 120,0 l 6,0 0,6 -6,0 z M 126,0 l 6,0 0,6 -6,0 z M 132,0 l 6,0 0,6 -6,0 z M 138,0 l 6,0 0,6 -6,0 z M 144,0 l 6,0 0,6 -6,0 z M 0,6 l 6,0 0,6 -6,0 z M 36,6 l 6,0 0,6 -6,0 z M 48,6 l 6,0 0,6 -6,0 z M 54,6 l 6,0 0,6 -6,0 z M 66,6 l 6,0 0,6 -6,0 z M 72,6 l 6,0 0,6 -6,0 z M 84,6 l 6,0 0,6 -6,0 z M 90,6 l 6,0 0,6 -6,0 z M 108,6 l 6,0 0,6 -6,0 z M 144,6 l 6,0 0,6 -6,0 z M 0,12 l 6,0 0,6 -6,0 z M 12,12 l 6,0 0,6 -6,0 z M 18,12 l 6,0 0,6 -6,0 z M 24,12 l 6,0 0,6 -6,0 z M 36,12 l 6,0 0,6 -6,0 z M 54,12 l 6,0 0,6 -6,0 z M 60,12 l 6,0 0,6 -6,0 z M 66,12 l 6,0 0,6 -6,0 z M 96,12 l 6,0 0,6 -6,0 z M 108,12 l 6,0 0,6 -6,0 z M 120,12 l 6,0 0,6 -6,0 z M 126,12 l 6,0 0,6 -6,0 z M 132,12 l 6,0 0,6 -6,0 z M 144,12 l 6,0 0,6 -6,0 z M 0,18 l 6,0 0,6 -6,0 z M 12,18 l 6,0 0,6 -6,0 z M 18,18 l 6,0 0,6 -6,0 z M 24,18 l 6,0 0,6 -6,0 z M 36,18 l 6,0 0,6 -6,0 z M 48,18 l 6,0 0,6 -6,0 z M 54,18 l 6,0 0,6 -6,0 z M 66,18 l 6,0 0,6 -6,0 z M 78,18 l 6,0 0,6 -6,0 z M 84,18 l 6,0 0,6 -6,0 z M 108,18 l 6,0 0,6 -6,0 z M 120,18 l 6,0 0,6 -6,0 z M 126,18 l 6,0 0,6 -6,0 z M 132,18 l 6,0 0,6 -6,0 z M 144,18 l 6,0 0,6 -6,0 z M 0,24 l 6,0 0,6 -6,0 z M 12,24 l 6,0 0,6 -6,0 z M 18,24 l 6,0 0,6 -6,0 z M 24,24 l 6,0 0,6 -6,0 z M 36,24 l 6,0 0,6 -6,0 z M 60,24 l 6,0 0,6 -6,0 z M 72,24 l 6,0 0,6 -6,0 z M 78,24 l 6,0 0,6 -6,0 z M 108,24 l 6,0 0,6 -6,0 z M 120,24 l 6,0 0,6 -6,0 z M 126,24 l 6,0 0,6 -6,0 z M 132,24 l 6,0 0,6 -6,0 z M 144,24 l 6,0 0,6 -6,0 z M 0,30 l 6,0 0,6 -6,0 z M 36,30 l 6,0 0,6 -6,0 z M 48,30 l 6,0 0,6 -6,0 z M 60,30 l 6,0 0,6 -6,0 z M 78,30 l 6,0 0,6 -6,0 z M 84,30 l 6,0 0,6 -6,0 z M 90,30 l 6,0 0,6 -6,0 z M 96,30 l 6,0 0,6 -6,0 z M 108,30 l 6,0 0,6 -6,0 z M 144,30 l 6,0 0,6 -6,0 z M 0,36 l 6,0 0,6 -6,0 z M 6,36 l 6,0 0,6 -6,0 z M 12,36 l 6,0 0,6 -6,0 z M 18,36 l 6,0 0,6 -6,0 z M 24,36 l 6,0 0,6 -6,0 z M 30,36 l 6,0 0,6 -6,0 z M 36,36 l 6,0 0,6 -6,0 z M 48,36 l 6,0 0,6 -6,0 z M 60,36 l 6,0 0,6 -6,0 z M 72,36 l 6,0 0,6 -6,0 z M 84,36 l 6,0 0,6 -6,0 z M 96,36 l 6,0 0,6 -6,0 z M 108,36 l 6,0 0,6 -6,0 z M 114,36 l 6,0 0,6 -6,0 z M 120,36 l 6,0 0,6 -6,0 z M 126,36 l 6,0 0,6 -6,0 z M 132,36 l 6,0 0,6 -6,0 z M 138,36 l 6,0 0,6 -6,0 z M 144,36 l 6,0 0,6 -6,0 z M 72,42 l 6,0 0,6 -6,0 z M 84,42 l 6,0 0,6 -6,0 z M 90,42 l 6,0 0,6 -6,0 z M 0,48 l 6,0 0,6 -6,0 z M 6,48 l 6,0 0,6 -6,0 z M 12,48 l 6,0 0,6 -6,0 z M 18,48 l 6,0 0,6 -6,0 z M 24,48 l 6,0 0,6 -6,0 z M 36,48 l 6,0 0,6 -6,0 z M 42,48 l 6,0 0,6 -6,0 z M 48,48 l 6,0 0,6 -6,0 z M 54,48 l 6,0 0,6 -6,0 z M 60,48 l 6,0 0,6 -6,0 z M 72,48 l 6,0 0,6 -6,0 z M 78,48 l 6,0 0,6 -6,0 z M 84,48 l 6,0 0,6 -6,0 z M 102,48 l 6,0 0,6 -6,0 z M 114,48 l 6,0 0,6 -6,0 z M 126,48 l 6,0 0,6 -6,0 z M 138,48 l 6,0 0,6 -6,0 z M 0,54 l 6,0 0,6 -6,0 z M 6,54 l 6,0 0,6 -6,0 z M 24,54 l 6,0 0,6 -6,0 z M 30,54 l 6,0 0,6 -6,0 z M 42,54 l 6,0 0,6 -6,0 z M 54,54 l 6,0 0,6 -6,0 z M 96,54 l 6,0 0,6 -6,0 z M 114,54 l 6,0 0,6 -6,0 z M 138,54 l 6,0 0,6 -6,0 z M 18,60 l 6,0 0,6 -6,0 z M 36,60 l 6,0 0,6 -6,0 z M 42,60 l 6,0 0,6 -6,0 z M 48,60 l 6,0 0,6 -6,0 z M 54,60 l 6,0 0,6 -6,0 z M 66,60 l 6,0 0,6 -6,0 z M 72,60 l 6,0 0,6 -6,0 z M 78,60 l 6,0 0,6 -6,0 z M 90,60 l 6,0 0,6 -6,0 z M 108,60 l 6,0 0,6 -6,0 z M 114,60 l 6,0 0,6 -6,0 z M 120,60 l 6,0 0,6 -6,0 z M 126,60 l 6,0 0,6 -6,0 z M 138,60 l 6,0 0,6 -6,0 z M 144,60 l 6,0 0,6 -6,0 z M 0,66 l 6,0 0,6 -6,0 z M 12,66 l 6,0 0,6 -6,0 z M 48,66 l 6,0 0,6 -6,0 z M 54,66 l 6,0 0,6 -6,0 z M 60,66 l 6,0 0,6 -6,0 z M 66,66 l 6,0 0,6 -6,0 z M 84,66 l 6,0 0,6 -6,0 z M 90,66 l 6,0 0,6 -6,0 z M 102,66 l 6,0 0,6 -6,0 z M 114,66 l 6,0 0,6 -6,0 z M 120,66 l 6,0 0,6 -6,0 z M 144,66 l 6,0 0,6 -6,0 z M 0,72 l 6,0 0,6 -6,0 z M 6,72 l 6,0 0,6 -6,0 z M 18,72 l 6,0 0,6 -6,0 z M 30,72 l 6,0 0,6 -6,0 z M 36,72 l 6,0 0,6 -6,0 z M 54,72 l 6,0 0,6 -6,0 z M 66,72 l 6,0 0,6 -6,0 z M 78,72 l 6,0 0,6 -6,0 z M 84,72 l 6,0 0,6 -6,0 z M 90,72 l 6,0 0,6 -6,0 z M 96,72 l 6,0 0,6 -6,0 z M 102,72 l 6,0 0,6 -6,0 z M 108,72 l 6,0 0,6 -6,0 z M 120,72 l 6,0 0,6 -6,0 z M 132,72 l 6,0 0,6 -6,0 z M 138,72 l 6,0 0,6 -6,0 z M 144,72 l 6,0 0,6 -6,0 z M 0,78 l 6,0 0,6 -6,0 z M 6,78 l 6,0 0,6 -6,0 z M 12,78 l 6,0 0,6 -6,0 z M 24,78 l 6,0 0,6 -6,0 z M 42,78 l 6,0 0,6 -6,0 z M 48,78 l 6,0 0,6 -6,0 z M 60,78 l 6,0 0,6 -6,0 z M 72,78 l 6,0 0,6 -6,0 z M 96,78 l 6,0 0,6 -6,0 z M 114,78 l 6,0 0,6 -6,0 z M 126,78 l 6,0 0,6 -6,0 z M 138,78 l 6,0 0,6 -6,0 z M 0,84 l 6,0 0,6 -6,0 z M 12,84 l 6,0 0,6 -6,0 z M 36,84 l 6,0 0,6 -6,0 z M 42,84 l 6,0 0,6 -6,0 z M 48,84 l 6,0 0,6 -6,0 z M 54,84 l 6,0 0,6 -6,0 z M 90,84 l 6,0 0,6 -6,0 z M 126,84 l 6,0 0,6 -6,0 z M 138,84 l 6,0 0,6 -6,0 z M 144,84 l 6,0 0,6 -6,0 z M 0,90 l 6,0 0,6 -6,0 z M 12,90 l 6,0 0,6 -6,0 z M 18,90 l 6,0 0,6 -6,0 z M 24,90 l 6,0 0,6 -6,0 z M 48,90 l 6,0 0,6 -6,0 z M 60,90 l 6,0 0,6 -6,0 z M 72,90 l 6,0 0,6 -6,0 z M 84,90 l 6,0 0,6 -6,0 z M 90,90 l 6,0 0,6 -6,0 z M 102,90 l 6,0 0,6 -6,0 z M 114,90 l 6,0 0,6 -6,0 z M 120,90 l 6,0 0,6 -6,0 z M 126,90 l 6,0 0,6 -6,0 z M 144,90 l 6,0 0,6 -6,0 z M 0,96 l 6,0 0,6 -6,0 z M 12,96 l 6,0 0,6 -6,0 z M 18,96 l 6,0 0,6 -6,0 z M 24,96 l 6,0 0,6 -6,0 z M 36,96 l 6,0 0,6 -6,0 z M 54,96 l 6,0 0,6 -6,0 z M 72,96 l 6,0 0,6 -6,0 z M 78,96 l 6,0 0,6 -6,0 z M 84,96 l 6,0 0,6 -6,0 z M 96,96 l 6,0 0,6 -6,0 z M 102,96 l 6,0 0,6 -6,0 z M 108,96 l 6,0 0,6 -6,0 z M 114,96 l 6,0 0,6 -6,0 z M 120,96 l 6,0 0,6 -6,0 z M 132,96 l 6,0 0,6 -6,0 z M 48,102 l 6,0 0,6 -6,0 z M 54,102 l 6,0 0,6 -6,0 z M 60,102 l 6,0 0,6 -6,0 z M 78,102 l 6,0 0,6 -6,0 z M 96,102 l 6,0 0,6 -6,0 z M 120,102 l 6,0 0,6 -6,0 z M 126,102 l 6,0 0,6 -6,0 z M 132,102 l 6,0 0,6 -6,0 z M 0,108 l 6,0 0,6 -6,0 z M 6,108 l 6,0 0,6 -6,0 z M 12,108 l 6,0 0,6 -6,0 z M 18,108 l 6,0 0,6 -6,0 z M 24,108 l 6,0 0,6 -6,0 z M 30,108 l 6,0 0,6 -6,0 z M 36,108 l 6,0 0,6 -6,0 z M 48,108 l 6,0 0,6 -6,0 z M 54,108 l 6,0 0,6 -6,0 z M 66,108 l 6,0 0,6 -6,0 z M 72,108 l 6,0 0,6 -6,0 z M 84,108 l 6,0 0,6 -6,0 z M 96,108 l 6,0 0,6 -6,0 z M 108,108 l 6,0 0,6 -6,0 z M 120,108 l 6,0 0,6 -6,0 z M 126,108 l 6,0 0,6 -6,0 z M 132,108 l 6,0 0,6 -6,0 z M 138,108 l 6,0 0,6 -6,0 z M 144,108 l 6,0 0,6 -6,0 z M 0,114 l 6,0 0,6 -6,0 z M 36,114 l 6,0 0,6 -6,0 z M 66,114 l 6,0 0,6 -6,0 z M 96,114 l 6,0 0,6 -6,0 z M 120,114 l 6,0 0,6 -6,0 z M 126,114 l 6,0 0,6 -6,0 z M 0,120 l 6,0 0,6 -6,0 z M 12,120 l 6,0 0,6 -6,0 z M 18,120 l 6,0 0,6 -6,0 z M 24,120 l 6,0 0,6 -6,0 z M 36,120 l 6,0 0,6 -6,0 z M 48,120 l 6,0 0,6 -6,0 z M 60,120 l 6,0 0,6 -6,0 z M 66,120 l 6,0 0,6 -6,0 z M 90,120 l 6,0 0,6 -6,0 z M 96,120 l 6,0 0,6 -6,0 z M 102,120 l 6,0 0,6 -6,0 z M 108,120 l 6,0 0,6 -6,0 z M 114,120 l 6,0 0,6 -6,0 z M 120,120 l 6,0 0,6 -6,0 z M 126,120 l 6,0 0,6 -6,0 z M 132,120 l 6,0 0,6 -6,0 z M 138,120 l 6,0 0,6 -6,0 z M 144,120 l 6,0 0,6 -6,0 z M 0,126 l 6,0 0,6 -6,0 z M 12,126 l 6,0 0,6 -6,0 z M 18,126 l 6,0 0,6 -6,0 z M 24,126 l 6,0 0,6 -6,0 z M 36,126 l 6,0 0,6 -6,0 z M 48,126 l 6,0 0,6 -6,0 z M 72,126 l 6,0 0,6 -6,0 z M 78,126 l 6,0 0,6 -6,0 z M 96,126 l 6,0 0,6 -6,0 z M 102,126 l 6,0 0,6 -6,0 z M 108,126 l 6,0 0,6 -6,0 z M 120,126 l 6,0 0,6 -6,0 z M 132,126 l 6,0 0,6 -6,0 z M 138,126 l 6,0 0,6 -6,0 z M 144,126 l 6,0 0,6 -6,0 z M 0,132 l 6,0 0,6 -6,0 z M 12,132 l 6,0 0,6 -6,0 z M 18,132 l 6,0 0,6 -6,0 z M 24,132 l 6,0 0,6 -6,0 z M 36,132 l 6,0 0,6 -6,0 z M 48,132 l 6,0 0,6 -6,0 z M 54,132 l 6,0 0,6 -6,0 z M 60,132 l 6,0 0,6 -6,0 z M 78,132 l 6,0 0,6 -6,0 z M 84,132 l 6,0 0,6 -6,0 z M 96,132 l 6,0 0,6 -6,0 z M 114,132 l 6,0 0,6 -6,0 z M 132,132 l 6,0 0,6 -6,0 z M 144,132 l 6,0 0,6 -6,0 z M 0,138 l 6,0 0,6 -6,0 z M 36,138 l 6,0 0,6 -6,0 z M 48,138 l 6,0 0,6 -6,0 z M 60,138 l 6,0 0,6 -6,0 z M 72,138 l 6,0 0,6 -6,0 z M 78,138 l 6,0 0,6 -6,0 z M 90,138 l 6,0 0,6 -6,0 z M 96,138 l 6,0 0,6 -6,0 z M 108,138 l 6,0 0,6 -6,0 z M 114,138 l 6,0 0,6 -6,0 z M 120,138 l 6,0 0,6 -6,0 z M 126,138 l 6,0 0,6 -6,0 z M 144,138 l 6,0 0,6 -6,0 z M 0,144 l 6,0 0,6 -6,0 z M 6,144 l 6,0 0,6 -6,0 z M 12,144 l 6,0 0,6 -6,0 z M 18,144 l 6,0 0,6 -6,0 z M 24,144 l 6,0 0,6 -6,0 z M 30,144 l 6,0 0,6 -6,0 z M 36,144 l 6,0 0,6 -6,0 z M 48,144 l 6,0 0,6 -6,0 z M 60,144 l 6,0 0,6 -6,0 z M 72,144 l 6,0 0,6 -6,0 z M 84,144 l 6,0 0,6 -6,0 z M 114,144 l 6,0 0,6 -6,0 z M 120,144 l 6,0 0,6 -6,0 z M 126,144 l 6,0 0,6 -6,0 z M 132,144 l 6,0 0,6 -6,0 z M 138,144 l 6,0 0,6 -6,0 z M 144,144 l 6,0 0,6 -6,0 z " />
                         </svg>
                     </div>
-                    <div class="lock-label" id="lockStatus" style="color:#ffffff; font-size:13px; font-weight:900; letter-spacing: 1.5px;">lockboxpi.local</div>
+                    <div class="lock-label" id="lockStatus" style="color:#ffffff; font-size:15px; font-weight:900; letter-spacing: 1.5px;">lockboxpi.local</div>
                 </div>
 
                 <div class="data-grid">
@@ -230,20 +230,20 @@
 
             <div id="mtk" class="tab-panel">
                 <div class="tectonic-card">
-                    <div class="data-label" style="font-size:11px">MTK ENGINE</div>
-                    <div id="mtkStatus" class="data-value accent" style="margin:20px 0; font-size:18px;">DISCONNECTED</div>
-                    <button class="btn-action" style="height:50px; width:80%" onclick="runMtk('printgpt')">READ GPT TABLE</button>
+                    <div class="data-label" style="font-size:13px">MTK ENGINE</div>
+                    <div id="mtkStatus" class="data-value accent" style="margin:20px 0; font-size:20px;">DISCONNECTED</div>
+                    <button class="btn-action" style="height:54px; width:80%" onclick="runMtk('printgpt')">READ GPT TABLE</button>
                     <div class="helper-text">Hold V UP + V Down and connect the USB</div>
                 </div>
             </div>
 
             <div id="knife" class="tab-panel">
                 <div class="tectonic-card">
-                    <div class="data-label" style="font-size:11px">FORENSIC MODULES</div>
-                    <div id="lkStatus" class="data-value accent" style="margin:20px 0; font-size:18px;">READY</div>
+                    <div class="data-label" style="font-size:13px">FORENSIC MODULES</div>
+                    <div id="lkStatus" class="data-value accent" style="margin:20px 0; font-size:20px;">READY</div>
                     <div style="display:flex; gap:15px;">
-                        <button class="btn-action" style="height:50px; padding:0 20px" onclick="runLk('pull-pattern')">PULL KEY</button>
-                        <button class="btn-action" style="height:50px; padding:0 20px" onclick="runLk('dump-system')">DUMP SYS</button>
+                        <button class="btn-action" style="height:54px; padding:0 20px" onclick="runLk('pull-pattern')">PULL KEY</button>
+                        <button class="btn-action" style="height:54px; padding:0 20px" onclick="runLk('dump-system')">DUMP SYS</button>
                     </div>
                     <div class="helper-text">Ensure ADB is authorized on target device</div>
                 </div>
