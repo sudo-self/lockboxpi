@@ -124,7 +124,7 @@ def run_custom_command():
         return jsonify(status="error", output="Empty command provided")
 
     if cmd.startswith("mtk "):
-        cmd = cmd.replace("mtk ", f"{MTK_PYTHON} {MTK_SCRIPT} ", 1)
+        cmd = cmd.replace("mtk ", f"sudo {MTK_PYTHON} {MTK_SCRIPT} ", 1)
     elif cmd.startswith("knife "):
         cmd = cmd.replace("knife ", f"sudo {KNIFE_SCRIPT} ", 1)
     
@@ -176,7 +176,7 @@ def wifi_connect():
 @app.route('/mtk/<cmd>')
 def run_mtk_action(cmd):
     try:
-        full_cmd = f"{MTK_PYTHON} {MTK_SCRIPT} {cmd}"
+        full_cmd = f"sudo {MTK_PYTHON} {MTK_SCRIPT} {cmd}"
         output = subprocess.check_output(full_cmd, shell=True, stderr=subprocess.STDOUT, timeout=60, cwd=DUMPS_DIR).decode('utf-8')
         return jsonify(status="success", output=output)
     except subprocess.TimeoutExpired:
