@@ -124,6 +124,15 @@
             display: flex; align-items: center; justify-content: center;
         }
         .btn-action:active { box-shadow: var(--bevel-inner); transform: translateY(1px); }
+
+        .btn-xplt {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%23ff9d00'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+            background-position: right 6px center;
+            background-repeat: no-repeat;
+            border: 1px solid var(--accent-glow) !important;
+            padding-right: 15px !important;
+            color: var(--accent-core) !important;
+        }
     </style>
 </head>
 <body>
@@ -223,7 +232,7 @@
                 <div class="input-wrap">
                     <input type="text" id="termInput" placeholder="CMD..." ontouchstart="this.focus();">
                     <button class="btn-action" onclick="pushCmd()">CMD</button>
-                    <select id="cmdSelect" onchange="injectCmd()">
+                    <select id="cmdSelect" class="btn-xplt" onchange="injectCmd()">
                         <option value="">XPLT</option>
                         <option value="lsusb">LSUSB</option>
                         <option value="whoami">WHOAMI</option>
