@@ -93,7 +93,7 @@
         .data-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; }
         .data-cell { background: var(--plate-surface); padding: 12px 5px; border-radius: 6px; box-shadow: var(--bevel-outer); display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .data-cell.action { cursor: pointer; border: 1px solid var(--accent-glow); }
-        .data-label { font-size: 8px; color: var(--text-dim); text-transform: uppercase; font-weight: 900; margin-bottom: 4px; }
+        .data-label { font-size: 8px; color: var(--text-dim); text-transform: uppercase; font-weight: 900; margin-bottom: 4px; text-align: center; }
         .data-value { font-family: 'JetBrains Mono'; font-size: 13px; color: var(--indigo-400); font-weight: 700; }
         .data-value.accent { color: var(--accent-core); }
 
@@ -130,9 +130,13 @@
             background-position: right 6px center;
             background-repeat: no-repeat;
             border: 1px solid var(--accent-glow) !important;
-            padding-right: 15px !important;
+            padding: 0 15px !important;
             color: var(--accent-core) !important;
+            text-align: center;
+            text-align-last: center;
         }
+
+        .lock-label { text-align: center; width: 100%; }
     </style>
 </head>
 <body>
