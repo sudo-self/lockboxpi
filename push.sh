@@ -19,9 +19,15 @@ if [ -f "header.html" ]; then
     scp header.html $PI_USER@$PI_IP:/var/www/dumps/header.html
 fi
 
-# 4. Remote Commands with X11 Authority fix
+# 4. Handle Apache Config
+if [ -f "dumps.conf" ]; then
+    scp dumps.conf $PI_USER@$PI_IP:/home/lockboxpi/dumps.conf
+fi
+
+# 5. Remote Commands with X11 Authority fix
 # We point to the lockboxpi user's .Xauthority file to gain control of the screen
 ssh lockboxpi@$PI_IP "
+    echo '053053lb' | sudo -S mv /home/lockboxpi/dumps.conf /etc/apache2/conf-enabled/dumps.conf && \
     echo '053053lb' | sudo -S chown -R lockboxpi:www-data /var/www && \
     echo '053053lb' | sudo -S chmod -R 755 /var/www && \
     echo '053053lb' | sudo -S chmod -R 777 /var/www/dumps && \
