@@ -37,6 +37,20 @@ def get_uptime():
         logging.error(f"Failed to get uptime: {e}")
         return "0h 0m"
 
+def get_tunnel_url():
+    try:
+        if os.path.exists("/tmp/cloudflared.log"):
+            with open("/tmp/cloudflared.log", "r") as f:
+                for line in f:
+                    if "trycloudflare.com" in line:
+                        parts = line.split("https://")
+                        if len(parts) > 1:
+                            url = "https://" + parts[1].split()[0].replace("|", "").strip()
+                            return url
+    except Exception as e:
+        logging.error(f"Failed to get tunnel URL: {e}")
+    return None
+
 @app.route('/stats')
 def get_stats():
     temp_val = "ERR"
@@ -99,7 +113,8 @@ def get_stats():
         device=adb,
         mtk_status=mtk,
         ip_address=ip,
-        usb_active=usb_active
+        usb_active=usb_active,
+        tunnel_url=get_tunnel_url()
     )
 
 @app.route('/terminal/run', methods=['POST'])

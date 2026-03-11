@@ -51,6 +51,7 @@
         }
 
         .brand { display: flex; align-items: center; color: var(--safe-core); }
+        .brand a { color: inherit; text-decoration: none; }
         .brand img { width: 18px; height: 18px; margin-right: 8px; }
         .dynamic-ip { color: var(--safe-core); font-weight: 900; }
 
@@ -158,7 +159,7 @@
         <header>
             <div class="brand">
                 <img src="/dumps/pi.webp" alt="Pi">
-                <span>lockboxpi.local</span>
+                <span id="brand-text">lockboxpi.local</span>
             </div>
             <div id="clock">00:00:00</div>
             <div class="dynamic-ip" id="header-ip">0.0.0.0</div>
@@ -357,6 +358,14 @@
                 const ipEl = document.getElementById('header-ip');
                 ipEl.textContent = data.ip_address;
                 
+                const brandEl = document.getElementById('brand-text');
+                if (data.tunnel_url) {
+                    const shortUrl = data.tunnel_url.replace('https://', '');
+                    brandEl.innerHTML = `<a href="${data.tunnel_url}" target="_blank">${shortUrl}</a>`;
+                } else {
+                    brandEl.textContent = 'lockboxpi.local';
+                }
+
                 document.getElementById('val-temp').textContent = data.cpu_temp;
                 document.getElementById('val-storage').textContent = data.storage_free;
                 document.getElementById('val-uptime').textContent = data.uptime;
