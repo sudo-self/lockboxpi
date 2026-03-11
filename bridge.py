@@ -63,9 +63,30 @@ def get_stats():
     try:
         lsusb = subprocess.check_output(["lsusb"], timeout=5).decode()
         mtk = "CONNECTED" if "0e8d" in lsusb else "DISCONNECTED"
-        # Check for external devices by ignoring internal Pi USB controllers/hubs
-        ignored = ["Linux Foundation", "VIA Labs, Inc. Hub", "Standard Microsystems Corp.", "Microchip Technology, Inc."]
-        usb_active = any(not any(ign in line for ign in ignored) and line.strip() for line in lsusb.split('\n'))
+        
+        # Strictly ignore internal Pi components and generic hubs to detect target devices
+        ignored_patterns = [
+            "Linux Foundation", 
+            "VIA Labs, Inc. Hub", 
+            "Standard Microsystems Corp.", 
+            "Microchip Technology, Inc.",
+            "root hub",
+            "hub"
+        ]
+        
+        # Check if any line in lsusb represents a device that isn't on the ignore list
+        usb_active = False
+        for line in lsusb.split('\n'):
+            line = line.strip()
+            if not line: continue
+            if not any(pattern.lower() in line.lower() for pattern in ignored_patterns):
+                usb_active = True
+                break
+        
+        # Also force active if specialized forensic modes are detected
+        if adb != "NONE" or mtk == "CONNECTED":
+            usb_active = True
+            
     except Exception as e:
         logging.error(f"Failed to get lsusb: {e}")
         mtk = "ERR"
