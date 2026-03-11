@@ -2,7 +2,7 @@
 
 # Apply immediately for the current session
 export DISPLAY=:0
-xinput set-prop 'ADS7846 Touchscreen' 'Coordinate Transformation Matrix' 1.1 0 -0.05 0 1.1 -0.05 0 0 1
+xinput set-prop 'ADS7846 Touchscreen' 'Coordinate Transformation Matrix' -1.1 0 1.05 0 1.1 -0.05 0 0 1
 echo "Touch calibration applied to current X11 session."
 
 # Make it persistent across reboots and screen power cycles
@@ -13,7 +13,7 @@ if [ -d "$CONF_DIR" ]; then
     echo 'Section "InputClass"' | sudo tee $CONF_FILE > /dev/null
     echo '        Identifier      "calibration"' | sudo tee -a $CONF_FILE > /dev/null
     echo '        MatchProduct    "ADS7846 Touchscreen"' | sudo tee -a $CONF_FILE > /dev/null
-    echo '        Option  "TransformationMatrix"  "1.1 0 -0.05 0 1.1 -0.05 0 0 1"' | sudo tee -a $CONF_FILE > /dev/null
+    echo '        Option  "TransformationMatrix"  "-1.1 0 1.05 0 1.1 -0.05 0 0 1"' | sudo tee -a $CONF_FILE > /dev/null
     echo 'EndSection' | sudo tee -a $CONF_FILE > /dev/null
     echo "Persistent calibration installed to $CONF_FILE"
 else
@@ -24,7 +24,7 @@ else
         echo 'Section "InputClass"' | sudo tee $CONF_FILE > /dev/null
         echo '        Identifier      "calibration"' | sudo tee -a $CONF_FILE > /dev/null
         echo '        MatchProduct    "ADS7846 Touchscreen"' | sudo tee -a $CONF_FILE > /dev/null
-        echo '        Option  "TransformationMatrix"  "1.1 0 -0.05 0 1.1 -0.05 0 0 1"' | sudo tee -a $CONF_FILE > /dev/null
+        echo '        Option  "TransformationMatrix"  "-1.1 0 1.05 0 1.1 -0.05 0 0 1"' | sudo tee -a $CONF_FILE > /dev/null
         echo 'EndSection' | sudo tee -a $CONF_FILE > /dev/null
         echo "Persistent calibration installed to $CONF_FILE"
     else

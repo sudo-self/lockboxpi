@@ -272,7 +272,7 @@
                         <option value="df -h">DISK_FREE</option>
                         <option value="dmesg | tail -n 20">SYS_LOG</option>
                         <option value="DISPLAY=:0 xinput set-prop 'ADS7846 Touchscreen' 'Coordinate Transformation Matrix' 0 1 0 -1 0 1 0 0 1">TOUCH_ROTATE</option>
-                        <option value="DISPLAY=:0 xinput set-prop 'ADS7846 Touchscreen' 'Coordinate Transformation Matrix' 1.1 0 -0.05 0 1.1 -0.05 0 0 1">TOUCH_CALIB</option>
+                        <option value="DISPLAY=:0 xinput set-prop 'ADS7846 Touchscreen' 'Coordinate Transformation Matrix' -1.1 0 1.05 0 1.1 -0.05 0 0 1">TOUCH_CALIB</option>
                         <option value="sudo systemctl restart lockbox-bridge.service">RE_BRIDGE</option>
                         <option value="sudo reboot">REBOOT</option>
                     </select>
