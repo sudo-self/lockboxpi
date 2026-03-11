@@ -98,7 +98,8 @@
         .data-value.accent { color: var(--accent-core); }
 
         .terminal { flex: 1; background: #050505; border-radius: 4px; padding: 10px; font-family: 'JetBrains Mono'; font-size: 11px; color: #888; overflow-y: auto; box-shadow: inset 0 2px 10px #000; }
-        .input-wrap { display: grid; grid-template-columns: 85px 1fr 70px; gap: 6px; margin-top: 10px; height: 45px; }
+        .input-wrap { display: grid; grid-template-columns: 1fr 90px; gap: 6px; margin-top: 10px; height: 80px; }
+        .btn-stack { display: grid; grid-template-rows: 1fr 1fr; gap: 6px; }
         
         input {
             background: var(--base-crust); border: none; box-shadow: var(--bevel-inner);
@@ -111,7 +112,7 @@
         select {
             background: var(--plate-surface); box-shadow: var(--bevel-outer); border: none;
             border-radius: 4px; color: var(--text-primary); font-weight: 900;
-            font-size: 13px; cursor: pointer; padding: 0 5px; width: 100%; height: 100%;
+            font-size: 11px; cursor: pointer; padding: 0; width: 100%; height: 100%;
             font-family: 'JetBrains Mono'; outline: none; appearance: none; -webkit-appearance: none;
             text-align: center;
         }
@@ -120,7 +121,7 @@
         .btn-action {
             background: var(--plate-surface); box-shadow: var(--bevel-outer); border: none;
             border-radius: 4px; color: var(--text-primary); font-weight: 900;
-            font-size: 13px; cursor: pointer; padding: 0; width: 100%; height: 100%;
+            font-size: 11px; cursor: pointer; padding: 0; width: 100%; height: 100%;
             display: flex; align-items: center; justify-content: center;
         }
         .btn-action:active { box-shadow: var(--bevel-inner); transform: translateY(1px); }
@@ -221,30 +222,32 @@
             <div id="term" class="tab-panel">
                 <div class="terminal" id="termOutput"></div>
                 <div class="input-wrap">
-                    <select id="cmdSelect" onchange="injectCmd()">
-                        <option value="">MACRO</option>
-                        <option value="lsusb">LSUSB</option>
-                        <option value="whoami">WHOAMI</option>
-                        <option value="uname -a">UNAME</option>
-                        <option value="adb devices">ADB_DEV</option>
-                        <option value="adb reboot bootloader">BOOT_LDR</option>
-                        <option value="adb shell getprop ro.product.model">ADB_MODEL</option>
-                        <option value="fastboot devices">FB_DEV</option>
-                        <option value="fastboot getvar all">FB_VARS</option>
-                        <option value="mtk printgpt">MTK_GPT</option>
-                        <option value="mtk e frp">MTK_FRP</option>
-                        <option value="knife pull-pattern">KNIFE_KEY</option>
-                        <option value="knife dump-system">KNIFE_DUMP</option>
-                        <option value="ip addr">IP_ADDR</option>
-                        <option value="df -h">DISK_FREE</option>
-                        <option value="dmesg | tail -n 20">SYS_LOG</option>
-                        <option value="DISPLAY=:0 xinput set-prop 'ADS7846 Touchscreen' 'Coordinate Transformation Matrix' 0 1 0 -1 0 1 0 0 1">TOUCH_ROTATE</option>
-                        <option value="DISPLAY=:0 xinput set-prop 'ADS7846 Touchscreen' 'Coordinate Transformation Matrix' 1.1 0 -0.05 0 1.1 -0.05 0 0 1">TOUCH_CALIB</option>
-                        <option value="sudo systemctl restart lockbox-bridge.service">RE_BRIDGE</option>
-                        <option value="sudo reboot">REBOOT</option>
-                    </select>
                     <input type="text" id="termInput" placeholder="CMD..." ontouchstart="this.focus();">
-                    <button class="btn-action" onclick="pushCmd()">CMD</button>
+                    <div class="btn-stack">
+                        <button class="btn-action" onclick="pushCmd()">CMD</button>
+                        <select id="cmdSelect" onchange="injectCmd()">
+                            <option value="">MACRO</option>
+                            <option value="lsusb">LSUSB</option>
+                            <option value="whoami">WHOAMI</option>
+                            <option value="uname -a">UNAME</option>
+                            <option value="adb devices">ADB_DEV</option>
+                            <option value="adb reboot bootloader">BOOT_LDR</option>
+                            <option value="adb shell getprop ro.product.model">ADB_MODEL</option>
+                            <option value="fastboot devices">FB_DEV</option>
+                            <option value="fastboot getvar all">FB_VARS</option>
+                            <option value="mtk printgpt">MTK_GPT</option>
+                            <option value="mtk e frp">MTK_FRP</option>
+                            <option value="knife pull-pattern">KNIFE_KEY</option>
+                            <option value="knife dump-system">KNIFE_DUMP</option>
+                            <option value="ip addr">IP_ADDR</option>
+                            <option value="df -h">DISK_FREE</option>
+                            <option value="dmesg | tail -n 20">SYS_LOG</option>
+                            <option value="DISPLAY=:0 xinput set-prop 'ADS7846 Touchscreen' 'Coordinate Transformation Matrix' 0 1 0 -1 0 1 0 0 1">TOUCH_ROTATE</option>
+                            <option value="DISPLAY=:0 xinput set-prop 'ADS7846 Touchscreen' 'Coordinate Transformation Matrix' 1.1 0 -0.05 0 1.1 -0.05 0 0 1">TOUCH_CALIB</option>
+                            <option value="sudo systemctl restart lockbox-bridge.service">RE_BRIDGE</option>
+                            <option value="sudo reboot">REBOOT</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </main>
