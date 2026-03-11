@@ -14,6 +14,7 @@
             --accent-glow: rgba(255, 157, 0, 0.3);
             --danger-core: #ff4444;
             --safe-core: #00ffa2;
+            --cf-orange: #f38020;
             --indigo-400: #818cf8;
             --indigo-300: #a5b4fc;
             --text-primary: #e2e4e9;
@@ -358,12 +359,15 @@
                 const ipEl = document.getElementById('header-ip');
                 ipEl.textContent = data.ip_address;
                 
+                const brandWrapper = document.querySelector('.brand');
                 const brandEl = document.getElementById('brand-text');
                 if (data.tunnel_url) {
                     const shortUrl = data.tunnel_url.replace('https://', '');
                     brandEl.innerHTML = `<a href="${data.tunnel_url}" target="_blank">${shortUrl}</a>`;
+                    brandWrapper.style.color = 'var(--cf-orange)';
                 } else {
                     brandEl.textContent = 'lockboxpi.local';
+                    brandWrapper.style.color = 'var(--safe-core)';
                 }
 
                 document.getElementById('val-temp').textContent = data.cpu_temp;
