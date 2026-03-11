@@ -6,94 +6,154 @@
     <title>LockboxPi | Tectonic Utility</title>
     <style>
         :root {
-            --base-crust: #0f1012;
-            --plate-surface: #1a1c20;
-            --plate-highlight: #282a2f;
+            --bg-deep: #0a0a0c;
+            --plate-surface: #1e2024;
+            --plate-highlight: #2c2f35;
             --plate-shadow: #08090a;
-            --accent-core: #ff9d00;
-            --accent-glow: rgba(255, 157, 0, 0.3);
-            --danger-core: #ff4444;
-            --safe-core: #00ffa2;
+            --milled-texture: rgba(255, 255, 255, 0.03);
+            --accent-core: #f59e0b;
+            --accent-glow: rgba(245, 158, 11, 0.3);
+            --danger-core: #ef4444;
+            --safe-core: #10b981;
             --cf-orange: #f38020;
-            --indigo-400: #818cf8;
-            --indigo-300: #a5b4fc;
-            --text-primary: #e2e4e9;
-            --text-dim: #5d626f;
-            --bevel-outer: 2px 2px 5px var(--plate-shadow), -1px -1px 3px var(--plate-highlight);
-            --bevel-inner: inset 2px 2px 4px var(--plate-shadow), inset -1px -1px 2px var(--plate-highlight);
+            --indigo-400: #94a3b8;
+            --indigo-300: #64748b;
+            --text-primary: #e2e8f0;
+            --text-dim: #4b5563;
+            
+            --shadow-milled: 
+                inset 1px 1px 0px rgba(255,255,255,0.05),
+                inset -1px -1px 0px rgba(0,0,0,0.5),
+                2px 2px 8px rgba(0,0,0,0.4);
+                
+            --bevel-sharp: 
+                inset 1px 1px 2px rgba(255,255,255,0.1),
+                inset -1px -1px 2px rgba(0,0,0,0.8);
+
+            --bevel-outer: var(--shadow-milled);
+            --bevel-inner: inset 0 2px 10px rgba(0,0,0,0.8);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--base-crust); font-family: 'Inter', sans-serif; color: var(--text-primary); overflow: hidden; display: flex; justify-content: center; align-items: center; }
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background-color: var(--bg-deep);
+            background-image: 
+                radial-gradient(circle at 50% 50%, #16181b 0%, #0a0a0c 100%),
+                repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,0.1) 1px, rgba(0,0,0,0.1) 2px);
+            font-family: 'Inter', sans-serif; color: var(--text-primary); overflow: hidden; display: flex; justify-content: center; align-items: center; 
+        }
 
         .device-frame {
             width: 480px; height: 320px;
             background: var(--plate-surface);
+            background-image: 
+                linear-gradient(135deg, var(--plate-highlight) 0%, var(--plate-surface) 50%, var(--plate-shadow) 100%),
+                repeating-linear-gradient(90deg, var(--milled-texture), var(--milled-texture) 1px, transparent 1px, transparent 4px);
             position: relative;
             display: grid;
             grid-template-columns: 115px 1fr;
             grid-template-rows: 45px 1fr;
-            padding: 4px;
-            border-radius: 8px;
-            box-shadow: 0 0 0 1px var(--plate-highlight), 10px 10px 30px rgba(0,0,0,0.5);
+            padding: 6px;
+            border-radius: 12px;
+            box-shadow: 0 0 0 1px #33373e, 0 20px 50px rgba(0,0,0,0.8), inset 0 0 40px rgba(0,0,0,0.5);
+            border: 2px solid #2a2d33;
         }
+
+        /* CNC Milled Screws */
+        .screw {
+            position: absolute; width: 8px; height: 8px; background: #333; border-radius: 50%;
+            box-shadow: var(--bevel-sharp); z-index: 10;
+        }
+        .screw::after {
+            content: ''; position: absolute; top: 50%; left: 50%; width: 5px; height: 1px;
+            background: #111; transform: translate(-50%, -50%) rotate(45deg);
+        }
+        .tl { top: 8px; left: 8px; }
+        .tr { top: 8px; right: 8px; }
+        .bl { bottom: 8px; left: 8px; }
+        .br { bottom: 8px; right: 8px; }
 
         .crt-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
             background-size: 100% 2px;
-            pointer-events: none; z-index: 100; opacity: 0.1;
+            pointer-events: none; z-index: 100; opacity: 0.05;
         }
 
         header {
             grid-column: 1 / span 2; display: flex; align-items: center; justify-content: space-between;
-            padding: 0 17px; background: var(--base-crust); margin: 4px; border-radius: 4px;
-            box-shadow: var(--bevel-inner); font-family: 'JetBrains Mono'; font-size: 15px;
+            padding: 0 20px; background: #121417; margin: 4px; border-radius: 8px 8px 4px 4px;
+            box-shadow: var(--shadow-milled); border-bottom: 1px solid #000; font-family: 'JetBrains Mono'; font-size: 15px;
         }
 
-        .brand { display: flex; align-items: center; color: var(--safe-core); }
+        .brand {
+            display: flex; align-items: center; gap: 10px; color: var(--accent-core);
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
         .brand a { color: inherit; text-decoration: none; }
-        .brand img { width: 20px; height: 20px; margin-right: 8px; }
-        .dynamic-ip { color: var(--safe-core); font-weight: 900; }
+        .brand img { width: 20px; height: 20px; }
+        .dynamic-ip { color: #94a3b8; font-weight: 500; font-size: 12px; }
 
         nav { display: flex; flex-direction: column; gap: 7px; padding: 4px; }
         .nav-item {
             flex: 1; background: var(--plate-surface); border-radius: 6px;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer; box-shadow: var(--bevel-outer); transition: 0.1s;
+            cursor: pointer; border: 1px solid transparent; box-shadow: var(--shadow-milled);
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;
         }
-        .nav-item.active { box-shadow: var(--bevel-inner); background: var(--base-crust); }
-        .nav-item svg { width: 30px; fill: var(--text-dim); margin-bottom: 2px; }
-        .nav-item.active svg { fill: var(--accent-core); filter: drop-shadow(0 0 5px var(--accent-glow)); }
-        .nav-item span { font-size: 13px; font-weight: 900; color: var(--text-dim); }
+        .nav-item::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(0deg, rgba(255,255,255,0.02), transparent); pointer-events: none;
+        }
+        .nav-item.active { background: var(--bg-deep); box-shadow: inset 2px 2px 5px rgba(0,0,0,0.8); border-color: rgba(245, 158, 11, 0.3); }
+        .nav-item svg { width: 26px; fill: #4b5563; margin-bottom: 2px; transition: fill 0.2s; }
+        .nav-item.active svg { fill: var(--accent-core); filter: drop-shadow(0 0 4px var(--accent-glow)); }
+        .nav-item span { font-size: 11px; font-weight: 900; color: #4b5563; text-transform: uppercase; letter-spacing: 1px; }
+        .nav-item.active span { color: #cbd5e1; }
 
         .usb-indicator {
             height: 39px; display: flex; align-items: center; justify-content: center;
-            gap: 8px; font-size: 13px; font-family: 'JetBrains Mono'; font-weight: 900; color: var(--text-dim);
-            margin-top: 5px; border-top: 1px solid var(--plate-highlight); padding-top: 5px;
+            gap: 8px; font-size: 11px; font-family: 'JetBrains Mono'; font-weight: 700; color: #64748b;
+            margin-top: 5px; border-top: 1px solid #1a1d21; padding-top: 5px;
         }
-        .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent-core); transition: 0.3s; }
-        .dot.active { background: var(--safe-core); box-shadow: 0 0 10px var(--safe-core); }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #1f2937; box-shadow: inset 0 1px 2px #000; transition: 0.3s; }
+        .dot.active { background: var(--accent-core); box-shadow: 0 0 10px var(--accent-glow); }
 
-        main { background: var(--base-crust); margin: 4px; border-radius: 6px; box-shadow: var(--bevel-inner); padding: 12px; overflow: hidden; }
+        main { 
+            background: #0f1114; margin: 4px; border-radius: 6px; 
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.8); border: 1px solid #000; 
+            padding: 12px; overflow: hidden; position: relative;
+        }
+        .viewport-glass {
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 40%, rgba(255,255,255,0.01) 100%);
+            pointer-events: none; z-index: 5;
+        }
         .tab-panel { display: none; height: 100%; flex-direction: column; }
         .tab-panel.active { display: flex; }
 
         .tectonic-card {
-            background: var(--plate-surface);
+            background: #1a1d21;
             background-image: url('/dumps/inner-bg.gif');
             background-size: cover;
             background-position: center;
-            border-radius: 8px; box-shadow: var(--bevel-outer);
+            border-radius: 8px; padding: 15px; border: 1px solid #2a2d33;
+            box-shadow: var(--shadow-milled);
             flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            margin-bottom: 10px; border: 1px solid var(--plate-highlight);
+            margin-bottom: 10px; position: relative;
         }
 
         .status-orb {
-            width: 85px; height: 85px; border-radius: 50%; background: var(--base-crust);
-            box-shadow: var(--bevel-inner); display: flex; align-items: center; justify-content: center;
-            margin-bottom: 8px; transition: 0.3s; cursor: pointer;
+            width: 85px; height: 85px; border-radius: 50%; 
+            background: conic-gradient(from 0deg, #111, #333, #111, #333, #111);
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 8px; box-shadow: 0 10px 20px rgba(0,0,0,0.5), var(--bevel-sharp);
+            cursor: pointer; transition: 0.3s; border: 4px solid #1a1d21;
         }
+        .status-orb:active { transform: scale(0.95) rotate(15deg); }
+
+        .status-orb svg { width: 70%; height: 70%; filter: drop-shadow(0 0 5px rgba(255,255,255,0.2)); }
         .status-orb.unlocked { border: 3px solid var(--safe-core); box-shadow: var(--bevel-inner), 0 0 15px rgba(0, 255, 162, 0.2); }
         .status-orb.locked { border: 3px solid var(--danger-core); }
 
@@ -195,43 +255,53 @@
 <body>
 
     <div class="device-frame">
+        <div class="screw tl"></div>
+        <div class="screw tr"></div>
+        <div class="screw bl"></div>
+        <div class="screw br"></div>
         <div class="crt-overlay"></div>
         
         <header>
             <div class="brand">
-                <div id="connStatus" class="dot" style="margin-right: 8px; width: 6px; height: 6px;"></div>
+                <div id="connStatus" class="status-dot"></div>
                 <img src="/dumps/pi.webp" alt="Pi">
-                <span id="brand-text">lockboxpi.local</span>
+                <span id="brand-text">LOCKBOX_PI // TECTONIC.SYS</span>
             </div>
-            <div class="dynamic-ip" id="header-ip">0.0.0.0</div>
+            <div class="dynamic-ip">
+                IP: <span id="header-ip">0.0.0.0</span>
+            </div>
         </header>
 
-        <nav>
-            <div class="nav-item active" onclick="switchTab('adb', this)">
-                <svg viewBox="0 0 24 24"><path d="M7 17h10v-2h-1v-3c0-2.21-1.79-4-4-4s-4 1.79-4 4v3H7v2zm5-11c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>
-                <span>ADB</span>
-            </div>
-            <div class="nav-item" onclick="switchTab('mtk', this)">
-                <svg viewBox="0 0 24 24"><path d="M13 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V9l-7-7z"/></svg>
-                <span>MTK</span>
-            </div>
-            <div class="nav-item" onclick="switchTab('knife', this)">
-                <svg viewBox="0 0 24 24"><path d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.16.09-.36.14-.57.14s-.41-.05-.57-.14l-7.9-4.44c-.31-.17-.53-.5-.53-.88V7.5c0-.38.21-.71.53-.88l7.9-4.44c.16-.09.36-.14.57-.14s.41.05.57.14l7.9 4.44c.31.17.53.5.53.88v9z"/></svg>
-                <span>KNIFE</span>
-            </div>
-            <div class="nav-item" onclick="switchTab('term', this)">
-                <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.1.89 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.11-.89-2-2-2z"/></svg>
-                <span>TERM</span>
-            </div>
-            
-            <div class="usb-indicator">
-                <div id="usbDot" class="dot"></div>
-                USB
-            </div>
-        </nav>
+        <div class="layout-body">
+            <nav>
+                <div class="nav-item active" onclick="switchTab('adb', this)">
+                    <svg viewBox="0 0 24 24"><path d="M7 17h10v-2h-1v-3c0-2.21-1.79-4-4-4s-4 1.79-4 4v3H7v2zm5-11c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>
+                    <span>ADB</span>
+                </div>
+                <div class="nav-item" onclick="switchTab('mtk', this)">
+                    <svg viewBox="0 0 24 24"><path d="M13 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V9l-7-7z"/></svg>
+                    <span>MTK</span>
+                </div>
+                <div class="nav-item" onclick="switchTab('knife', this)">
+                    <svg viewBox="0 0 24 24"><path d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.16.09-.36.14-.57.14s-.41-.05-.57-.14l-7.9-4.44c-.31-.17-.53-.5-.53-.88V7.5c0-.38.21-.71.53-.88l7.9-4.44c.16-.09.36-.14.57-.14s.41.05.57.14l7.9 4.44c.31.17.53.5.53.88v9z"/></svg>
+                    <span>KNIFE</span>
+                </div>
+                <div class="nav-item" onclick="switchTab('term', this)">
+                    <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.1.89 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.11-.89-2-2-2z"/></svg>
+                    <span>TERM</span>
+                </div>
+                
+                <div style="flex: 1;"></div>
+                
+                <div class="usb-indicator">
+                    <div id="usbDot" class="dot"></div>
+                    USB
+                </div>
+            </nav>
 
-        <main>
-            <div id="adb" class="tab-panel active">
+            <main>
+                <div class="viewport-glass"></div>
+                <div id="adb" class="tab-panel active">
                 <div class="tectonic-card">
                     <div id="lockOrb" class="status-orb" onclick="configureWiFi()" style="overflow: hidden; background: #fff; border: 3px solid var(--danger-core); padding: 5px;">
                         <svg viewBox="-10 -10 170 170" width="100%" height="100%">
@@ -242,14 +312,6 @@
                 </div>
 
                 <div class="data-grid">
-                    <div class="data-cell action" onclick="window.location.href='/dumps/'">
-                        <div class="data-label">VAULT</div>
-                        <div class="data-value" style="color: #ffcc00">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-                            </svg>
-                        </div>
-                    </div>
                     <div class="data-cell">
                         <div class="data-label">TEMP</div>
                         <div class="data-value" id="val-temp">--.-°C</div>
@@ -321,7 +383,8 @@
                 </div>
             </div>
         </main>
-    </div>
+        </div> <!-- layout-body end -->
+    </div> <!-- device-frame end -->
 
     <script>
         const bridgeUrl = "/api";
