@@ -282,8 +282,7 @@
     </div>
 
     <script>
-        const host = window.location.hostname || "127.0.0.1";
-        const bridgeUrl = `http://${host}:5000`;
+        const bridgeUrl = "/api";
 
         function switchTab(tabId, el) {
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
