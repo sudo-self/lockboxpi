@@ -128,8 +128,10 @@ def run_custom_command():
     elif cmd.startswith("knife "):
         cmd = cmd.replace("knife ", f"sudo {KNIFE_SCRIPT} ", 1)
     
+    logging.info(f"Executing command: {cmd}")
     try:
         output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, timeout=60, cwd=DUMPS_DIR).decode('utf-8')
+        logging.info("Command execution successful")
         return jsonify(status="success", output=output if output.strip() else "Command executed (No Output)")
     except subprocess.TimeoutExpired:
         return jsonify(status="error", output="Command timed out after 60 seconds")

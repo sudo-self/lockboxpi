@@ -199,6 +199,7 @@
         
         <header>
             <div class="brand">
+                <div id="connStatus" class="dot" style="margin-right: 8px; width: 6px; height: 6px;"></div>
                 <img src="/dumps/pi.webp" alt="Pi">
                 <span id="brand-text">lockboxpi.local</span>
             </div>
@@ -393,6 +394,9 @@
 
         function updateDashboard() {
             fetch(`${bridgeUrl}/stats`).then(res => res.json()).then(data => {
+                const connDot = document.getElementById('connStatus');
+                connDot.classList.add('active');
+                
                 const ipEl = document.getElementById('header-ip');
                 ipEl.textContent = data.ip_address;
                 
@@ -417,7 +421,10 @@
                 } else {
                     dot.classList.remove('active');
                 }
-            }).catch(err => console.error("Stats check offline", err))
+            }).catch(err => {
+                console.error("Stats check offline", err);
+                document.getElementById('connStatus').classList.remove('active');
+            })
             .finally(() => {
                 setTimeout(updateDashboard, 4000);
             });
