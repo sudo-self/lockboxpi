@@ -104,6 +104,14 @@
         .data-value { font-family: 'JetBrains Mono'; font-size: 15px; color: var(--indigo-400); font-weight: 700; }
         .data-value.accent { color: var(--accent-core); }
 
+        @keyframes shine {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+        @keyframes subtleGlow {
+            0%, 100% { box-shadow: var(--bevel-outer); border-color: var(--plate-highlight); }
+            50% { box-shadow: 0 0 10px rgba(255, 157, 0, 0.3), var(--bevel-outer); border-color: rgba(255, 157, 0, 0.5); }
+        }
         .github-link-btn {
             background: var(--plate-surface);
             padding: 8px;
@@ -114,14 +122,23 @@
             justify-content: center;
             gap: 8px;
             text-decoration: none;
-            color: var(--text-dim);
             font-family: 'JetBrains Mono';
             font-size: 12px;
             font-weight: 900;
             border: 1px solid var(--plate-highlight);
+            animation: subtleGlow 4s infinite alternate;
         }
-        .github-link-btn:active { box-shadow: var(--bevel-inner); transform: translateY(1px); }
-        .github-link-btn svg { fill: var(--text-dim); }
+        .bling-text {
+            background: linear-gradient(120deg, var(--text-dim) 30%, var(--accent-core) 45%, #ffffff 50%, var(--accent-core) 55%, var(--text-dim) 70%);
+            background-size: 200% auto;
+            color: transparent;
+            -webkit-background-clip: text;
+            background-clip: text;
+            animation: shine 3s linear infinite;
+        }
+        .github-link-btn:active { box-shadow: var(--bevel-inner); transform: translateY(1px); animation: none; }
+        .github-link-btn svg { fill: var(--text-dim); transition: fill 0.3s; }
+        .github-link-btn:hover svg { fill: var(--accent-core); }
 
         .helper-text {
             font-family: 'JetBrains Mono';
@@ -248,7 +265,7 @@
 
                 <a href="https://GitHub.com/sudo-self/lockboxpi" target="_blank" class="github-link-btn">
                     <svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                    GitHub.com/sudo-self/lockboxpi
+                    <span class="bling-text">GitHub.com/sudo-self/lockboxpi</span>
                 </a>
             </div>
 
