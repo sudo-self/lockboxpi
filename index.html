@@ -80,7 +80,11 @@
         .tab-panel.active { display: flex; }
 
         .tectonic-card {
-            background: var(--plate-surface); border-radius: 8px; box-shadow: var(--bevel-outer);
+            background: var(--plate-surface);
+            background-image: url('/dumps/inner-bg.png');
+            background-size: cover;
+            background-position: center;
+            border-radius: 8px; box-shadow: var(--bevel-outer);
             flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
             margin-bottom: 10px; border: 1px solid var(--plate-highlight);
         }
