@@ -2,6 +2,10 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
 import subprocess
+import logging
+
+# Configure basic logging for reliability and debugging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -18,7 +22,9 @@ def get_storage_free():
         st = os.statvfs('/')
         free = (st.f_bavail * st.f_frsize) / (1024**3)
         return f"{round(free, 1)}GB"
-    except: return "0GB"
+    except Exception as e:
+        logging.error(f"Failed to get storage free: {e}")
+        return "0GB"
 
 def get_uptime():
     try:
@@ -27,7 +33,9 @@ def get_uptime():
             hours = int(uptime_seconds // 3600)
             minutes = int((uptime_seconds % 3600) // 60)
             return f"{hours}h {minutes}m"
-    except: return "0h 0m"
+    except Exception as e:
+        logging.error(f"Failed to get uptime: {e}")
+        return "0h 0m"
 
 @app.route('/stats')
 def get_stats():
@@ -36,24 +44,30 @@ def get_stats():
         try:
             with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
                 temp_val = str(round(int(f.read()) / 1000, 1))
-        except: pass
+        except Exception as e:
+            logging.error(f"Failed to read temp: {e}")
     
     try:
-        ip = subprocess.check_output(["hostname", "-I"]).decode().split()[0]
-    except: ip = "127.0.0.1"
+        ip_out = subprocess.check_output(["hostname", "-I"], timeout=5).decode().strip()
+        ip = ip_out.split()[0] if ip_out else "lockboxpi.local"
+    except Exception as e:
+        ip = "lockboxpi.local"
 
     try:
-        adb_out = subprocess.check_output(["adb", "devices"]).decode().split('\n')
+        adb_out = subprocess.check_output(["adb", "devices"], timeout=5).decode().split('\n')
         adb = adb_out[1].split('\t')[0] if len(adb_out) > 1 and adb_out[1].strip() else "NONE"
-    except: adb = "NONE"
+    except Exception as e:
+        logging.error(f"Failed to get ADB devices: {e}")
+        adb = "NONE"
 
     try:
-        lsusb = subprocess.check_output(["lsusb"]).decode()
+        lsusb = subprocess.check_output(["lsusb"], timeout=5).decode()
         mtk = "CONNECTED" if "0e8d" in lsusb else "DISCONNECTED"
         # Check for external devices by ignoring internal Pi USB controllers/hubs
         ignored = ["Linux Foundation", "VIA Labs, Inc. Hub", "Standard Microsystems Corp.", "Microchip Technology, Inc."]
         usb_active = any(not any(ign in line for ign in ignored) and line.strip() for line in lsusb.split('\n'))
-    except: 
+    except Exception as e:
+        logging.error(f"Failed to get lsusb: {e}")
         mtk = "ERR"
         usb_active = False
 
@@ -70,29 +84,56 @@ def get_stats():
 @app.route('/terminal/run', methods=['POST'])
 def run_custom_command():
     cmd = request.json.get("command", "")
+    if not cmd:
+        return jsonify(status="error", output="Empty command provided")
+
     if cmd.startswith("mtk "):
-        cmd = cmd.replace("mtk ", f"{MTK_PYTHON} {MTK_SCRIPT} ")
+        cmd = cmd.replace("mtk ", f"{MTK_PYTHON} {MTK_SCRIPT} ", 1)
     elif cmd.startswith("knife "):
-        cmd = cmd.replace("knife ", f"sudo {KNIFE_SCRIPT} ")
+        cmd = cmd.replace("knife ", f"sudo {KNIFE_SCRIPT} ", 1)
     
     try:
         output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, timeout=60, cwd=DUMPS_DIR).decode('utf-8')
         return jsonify(status="success", output=output if output.strip() else "Command executed (No Output)")
-    except Exception as e:
-        err = e.output.decode() if hasattr(e, 'output') else str(e)
+    except subprocess.TimeoutExpired:
+        return jsonify(status="error", output="Command timed out after 60 seconds")
+    except subprocess.CalledProcessError as e:
+        err = e.output.decode('utf-8', errors='replace') if e.output else "Command failed with non-zero exit status"
         return jsonify(status="error", output=err)
+    except Exception as e:
+        return jsonify(status="error", output=str(e))
 
 @app.route('/wifi/connect', methods=['POST'])
 def wifi_connect():
     data = request.json
-    ssid, psk, slot = data.get("ssid"), data.get("psk"), data.get("slot", 3)
+    if not data:
+        return jsonify(status="error", output="No data provided")
+        
+    ssid = data.get("ssid")
+    psk = data.get("psk")
+    slot = data.get("slot", 3)
+    
+    if not ssid or not psk:
+         return jsonify(status="error", output="Missing SSID or Password")
+
     try:
-        subprocess.run(f"sudo sed -i \"s/^aWIFI_SSID\[{slot}\]=.*/aWIFI_SSID\[{slot}\]='{ssid}'/\" {WIFI_DB}", shell=True, check=True)
-        subprocess.run(f"sudo sed -i \"s/^aWIFI_PASSWORD\[{slot}\]=.*/aWIFI_PASSWORD\[{slot}\]='{psk}'/\" {WIFI_DB}", shell=True, check=True)
-        subprocess.run(f"sudo sed -i \"s/^aWIFI_KEYMGR\[{slot}\]=.*/aWIFI_KEYMGR\[{slot}\]='WPA-PSK'/\" {WIFI_DB}", shell=True, check=True)
+        # Avoid basic shell injection in sed by escaping single quotes
+        def escape_sh(s):
+            return str(s).replace("'", "'\"'\"'")
+            
+        safe_ssid = escape_sh(ssid)
+        safe_psk = escape_sh(psk)
+        safe_slot = escape_sh(slot)
+
+        subprocess.run(f"sudo sed -i \"s/^aWIFI_SSID\\[{safe_slot}\\]=.*/aWIFI_SSID\\[{safe_slot}\\]='{safe_ssid}'/\" {WIFI_DB}", shell=True, check=True)
+        subprocess.run(f"sudo sed -i \"s/^aWIFI_PASSWORD\\[{safe_slot}\\]=.*/aWIFI_PASSWORD\\[{safe_slot}\\]='{safe_psk}'/\" {WIFI_DB}", shell=True, check=True)
+        subprocess.run(f"sudo sed -i \"s/^aWIFI_KEYMGR\\[{safe_slot}\\]=.*/aWIFI_KEYMGR\\[{safe_slot}\\]='WPA-PSK'/\" {WIFI_DB}", shell=True, check=True)
         subprocess.run("sudo /boot/dietpi/func/dietpi-wifidb 1", shell=True, check=True)
         subprocess.Popen("sleep 5 && sudo reboot", shell=True)
-        return jsonify(status="success", output=f"Slot {slot} updated. Rebooting...")
+        return jsonify(status="success", output=f"Slot {safe_slot} updated. Rebooting...")
+    except subprocess.CalledProcessError as e:
+        logging.error(f"WiFi configuration failed: {e}")
+        return jsonify(status="error", output=f"WiFi configuration command failed")
     except Exception as e:
         return jsonify(status="error", output=str(e))
 
@@ -102,9 +143,13 @@ def run_mtk_action(cmd):
         full_cmd = f"{MTK_PYTHON} {MTK_SCRIPT} {cmd}"
         output = subprocess.check_output(full_cmd, shell=True, stderr=subprocess.STDOUT, timeout=60, cwd=DUMPS_DIR).decode('utf-8')
         return jsonify(status="success", output=output)
-    except Exception as e:
-        err = e.output.decode() if hasattr(e, 'output') else str(e)
+    except subprocess.TimeoutExpired:
+        return jsonify(status="error", output="MTK command timed out after 60 seconds")
+    except subprocess.CalledProcessError as e:
+        err = e.output.decode('utf-8', errors='replace') if e.output else "MTK command failed"
         return jsonify(status="error", output=err)
+    except Exception as e:
+        return jsonify(status="error", output=str(e))
 
 @app.route('/lk/<cmd>')
 def run_lk_action(cmd):
@@ -112,17 +157,22 @@ def run_lk_action(cmd):
     try:
         output = subprocess.check_output(f"sudo {KNIFE_SCRIPT} {flag}", shell=True, stderr=subprocess.STDOUT, timeout=300, cwd=DUMPS_DIR).decode('utf-8')
         return jsonify(status="success", output=output)
-    except Exception as e:
-        err = e.output.decode() if hasattr(e, 'output') else str(e)
+    except subprocess.TimeoutExpired:
+        return jsonify(status="error", output="Knife command timed out after 300 seconds")
+    except subprocess.CalledProcessError as e:
+        err = e.output.decode('utf-8', errors='replace') if e.output else "Knife command failed"
         return jsonify(status="error", output=err)
+    except Exception as e:
+        return jsonify(status="error", output=str(e))
 
 if __name__ == '__main__':
     # Apply touch orientation matrix for 3.5" TFT on startup
     try:
-        # Inverted X and Inverted Y (180 degree rotation)
-        matrix = "-1 0 1 0 -1 1 0 0 1" 
-        subprocess.run(f"DISPLAY=:0 xinput set-prop 'ADS7846 Touchscreen' 'Coordinate Transformation Matrix' {matrix}", shell=True)
+        # Calibrated Matrix for 3.5" TFT
+        matrix = "1.1 0 -0.05 0 1.1 -0.05 0 0 1" 
+        subprocess.run(f"DISPLAY=:0 xinput set-prop 'ADS7846 Touchscreen' 'Coordinate Transformation Matrix' {matrix}", shell=True, check=True)
+        logging.info("Touch calibration applied successfully.")
     except Exception as e:
-        print(f"Touch Calibration Failed: {e}")
+        logging.error(f"Touch Calibration Failed: {e}")
     
     app.run(host='0.0.0.0', port=5000)

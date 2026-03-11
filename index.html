@@ -245,7 +245,8 @@
     </div>
 
     <script>
-        const bridgeUrl = `http://${window.location.hostname}:5000`;
+        const host = window.location.hostname || "127.0.0.1";
+        const bridgeUrl = `http://${host}:5000`;
 
         function updateClock() {
             document.getElementById('clock').textContent = new Date().toTimeString().split(' ')[0];
@@ -321,7 +322,10 @@
 
         function updateDashboard() {
             fetch(`${bridgeUrl}/stats`).then(res => res.json()).then(data => {
-                document.getElementById('header-ip').textContent = data.ip_address;
+                const ipEl = document.getElementById('header-ip');
+                ipEl.textContent = data.ip_address;
+                ipEl.style.color = data.ip_address === "lockboxpi.local" ? "var(--safe-core)" : "var(--accent-core)";
+                
                 document.getElementById('val-temp').textContent = data.cpu_temp;
                 document.getElementById('val-storage').textContent = data.storage_free;
                 document.getElementById('val-uptime').textContent = data.uptime;
@@ -332,9 +336,11 @@
                 } else {
                     dot.classList.remove('active');
                 }
-            }).catch(() => console.log("Offline"));
+            }).catch(err => console.error("Stats check offline", err))
+            .finally(() => {
+                setTimeout(updateDashboard, 4000);
+            });
         }
-        setInterval(updateDashboard, 4000);
         updateDashboard();
 
         function runMtk(cmd) {
