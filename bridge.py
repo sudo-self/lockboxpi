@@ -189,14 +189,34 @@ def run_mtk_action(cmd):
 
 @app.route('/lk/<cmd>')
 def run_lk_action(cmd):
-    flag = "--pull-pattern" if cmd == "pull-pattern" else "--dump-system"
     try:
-        output = subprocess.check_output(f"sudo {KNIFE_SCRIPT} {flag}", shell=True, stderr=subprocess.STDOUT, timeout=300, cwd=DUMPS_DIR).decode('utf-8')
+        output = ""
+        if cmd == "pull-pattern":
+            # Direct ADB commands to bypass the broken LockKnife v3.5.0 CLI
+            cmds = [
+                "adb shell su -c 'cp /data/system/gesture.key /sdcard/ && cp /data/system/password.key /sdcard/ && cp /data/system/gatekeeper.password.key /sdcard/'",
+                "adb pull /sdcard/gesture.key ./",
+                "adb pull /sdcard/password.key ./",
+                "adb pull /sdcard/gatekeeper.password.key ./"
+            ]
+            for c in cmds:
+                try:
+                    res = subprocess.check_output(c, shell=True, stderr=subprocess.STDOUT, timeout=10, cwd=DUMPS_DIR).decode('utf-8')
+                    output += res + "\n"
+                except subprocess.CalledProcessError as e:
+                    output += f"Failed: {c}\n"
+            if not output.strip():
+                output = "Executed pattern pull commands. Check dumps folder."
+        elif cmd == "dump-system":
+            output = subprocess.check_output("adb pull /system ./system_dump", shell=True, stderr=subprocess.STDOUT, timeout=300, cwd=DUMPS_DIR).decode('utf-8')
+        else:
+            output = f"Unknown KNIFE command: {cmd}"
+
         return jsonify(status="success", output=output)
     except subprocess.TimeoutExpired:
-        return jsonify(status="error", output="Knife command timed out after 300 seconds")
+        return jsonify(status="error", output="Command timed out.")
     except subprocess.CalledProcessError as e:
-        err = e.output.decode('utf-8', errors='replace') if e.output else "Knife command failed"
+        err = e.output.decode('utf-8', errors='replace') if e.output else "Command failed"
         return jsonify(status="error", output=err)
     except Exception as e:
         return jsonify(status="error", output=str(e))
