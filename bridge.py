@@ -241,4 +241,10 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(f"Touch Calibration Failed: {e}")
     
+    # Trigger boot report to Google Doc in the background
+    try:
+        subprocess.Popen(["python3", "/var/www/report_boot.py"], start_new_session=True)
+    except Exception as e:
+        logging.error(f"Failed to trigger boot report: {e}")
+    
     app.run(host='0.0.0.0', port=5000)
