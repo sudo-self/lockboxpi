@@ -37,6 +37,46 @@ def get_uptime():
         logging.error(f"Failed to get uptime: {e}")
         return "0h 0m"
 
+def get_ip():
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # doesn't even have to be reachable
+        s.connect(('10.255.255.255', 1))
+        IP = s.getsockname()[0]
+    except Exception:
+        IP = '127.0.0.1'
+    finally:
+        s.close()
+    return IP
+
+def check_usb_devices():
+    mtk = "DISCONNECTED"
+    usb_active = False
+    # Common internal Pi VIDs: Linux Foundation, SMSC, Microchip, VIA
+    ignored_vids = ["1d6b", "0424", "2109", "0424", "1a40"] 
+    usb_path = "/sys/bus/usb/devices/"
+    
+    if not os.path.exists(usb_path):
+        return mtk, usb_active
+
+    try:
+        for device_dir in os.listdir(usb_path):
+            if "-" in device_dir and ":" not in device_dir:
+                try:
+                    with open(os.path.join(usb_path, device_dir, "idVendor"), "r") as f:
+                        vid = f.read().strip()
+                    if vid == "0e8d":
+                        mtk = "CONNECTED"
+                        usb_active = True
+                    elif vid not in ignored_vids:
+                        usb_active = True
+                except:
+                    continue
+    except Exception as e:
+        logging.error(f"USB check error: {e}")
+    return mtk, usb_active
+
 def get_tunnel_url():
     try:
         if os.path.exists("/tmp/cloudflared.log"):
@@ -61,50 +101,16 @@ def get_stats():
         except Exception as e:
             logging.error(f"Failed to read temp: {e}")
     
-    try:
-        ip_out = subprocess.check_output(["hostname", "-I"], timeout=5).decode().strip()
-        ip = ip_out.split()[0] if ip_out else "lockboxpi.local"
-    except Exception as e:
-        ip = "lockboxpi.local"
-
-    try:
-        adb_out = subprocess.check_output(["adb", "devices"], timeout=5).decode().split('\n')
-        adb = adb_out[1].split('\t')[0] if len(adb_out) > 1 and adb_out[1].strip() else "NONE"
-    except Exception as e:
-        logging.error(f"Failed to get ADB devices: {e}")
-        adb = "NONE"
-
-    try:
-        lsusb = subprocess.check_output(["lsusb"], timeout=5).decode()
-        mtk = "CONNECTED" if "0e8d" in lsusb else "DISCONNECTED"
-        
-        # Strictly ignore internal Pi components and generic hubs to detect target devices
-        ignored_patterns = [
-            "Linux Foundation", 
-            "VIA Labs, Inc. Hub", 
-            "Standard Microsystems Corp.", 
-            "Microchip Technology, Inc.",
-            "root hub",
-            "hub"
-        ]
-        
-        # Check if any line in lsusb represents a device that isn't on the ignore list
-        usb_active = False
-        for line in lsusb.split('\n'):
-            line = line.strip()
-            if not line: continue
-            if not any(pattern.lower() in line.lower() for pattern in ignored_patterns):
-                usb_active = True
-                break
-        
-        # Also force active if specialized forensic modes are detected
-        if adb != "NONE" or mtk == "CONNECTED":
-            usb_active = True
-            
-    except Exception as e:
-        logging.error(f"Failed to get lsusb: {e}")
-        mtk = "ERR"
-        usb_active = False
+    ip = get_ip()
+    mtk, usb_active = check_usb_devices()
+    
+    adb = "NONE"
+    if usb_active:
+        try:
+            adb_out = subprocess.check_output(["adb", "devices"], timeout=2).decode().split('\n')
+            adb = adb_out[1].split('\t')[0] if len(adb_out) > 1 and adb_out[1].strip() else "NONE"
+        except Exception:
+            adb = "NONE"
 
     return jsonify(
         cpu_temp=f"{temp_val}°C",

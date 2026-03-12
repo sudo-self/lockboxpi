@@ -2,3 +2,7 @@
 dumps/book1.mp4
 run_push.exp
 dumps.conf
+dumps/*.mp4
+dumps/*.mov
+dumps/*.pdf
+dumps/my_private_key
