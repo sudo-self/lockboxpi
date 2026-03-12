@@ -3,185 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LockboxDOCs | Obsidian Shutter</title>
-
+<title>LockboxDOCs</title>
 <script src="https://cdn.tailwindcss.com"></script>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=JetBrains+Mono:wght@300;500&display=swap" rel="stylesheet">
-
-<script>
-tailwind.config = {
-darkMode:"class",
-theme:{
-extend:{
-fontFamily:{
-sans:['Inter','sans-serif'],
-mono:['JetBrains Mono','monospace']
-},
-animation:{
-'shutter-open':'shutterOpen 1.2s cubic-bezier(0.87,0,0.13,1) forwards',
-'prism-drift':'prismDrift 8s ease-in-out infinite alternate',
-'glass-pulse':'glassPulse 4s ease-in-out infinite'
-},
-keyframes:{
-shutterOpen:{
-'0%':{transform:'scaleX(1)',opacity:'1'},
-'100%':{transform:'scaleX(0)',opacity:'0'}
-},
-prismDrift:{
-'0%':{transform:'translateX(-10%) translateY(-10%) rotate(0deg)',opacity:'0.3'},
-'100%':{transform:'translateX(10%) translateY(10%) rotate(5deg)',opacity:'0.6'}
-},
-glassPulse:{
-'0%,100%':{borderColor:'rgba(255,255,255,0.1)'},
-'50%':{borderColor:'rgba(255,255,255,0.3)'}
-}
-}
-}
-}
-}
-</script>
-
 <style>
-body{
-background-color:#020406;
-overflow:hidden;
-}
-
-.obsidian-grain{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-pointer-events:none;
-z-index:50;
-opacity:.04;
-background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-}
-
-.prism-leak{
-position:absolute;
-width:150%;
-height:150%;
-background:linear-gradient(135deg,transparent 0%,rgba(255,0,128,.05)25%,rgba(0,255,255,.05)50%,rgba(255,255,0,.05)75%,transparent 100%);
-filter:blur(60px);
-z-index:1;
-pointer-events:none;
-}
-
-.shutter-blade{
-position:fixed;
-top:0;
-height:100%;
-background:#000;
-z-index:100;
-transform-origin:left;
-}
-
-.obsidian-frame{
-position:relative;
-background:rgba(10,10,12,.8);
-border:1px solid rgba(255,255,255,.1);
-backdrop-filter:blur(12px);
-box-shadow:0 0 40px rgba(0,0,0,.5);
-}
-
-.glint{
-position:absolute;
-top:0;
-left:-100%;
-width:50%;
-height:100%;
-background:linear-gradient(90deg,transparent,rgba(255,255,255,.03),transparent);
-transition:.5s;
-}
-
-.obsidian-frame:hover .glint{
-left:150%;
-transition:1s cubic-bezier(.4,0,.2,1);
-}
+  body {
+    background-color: #020406;
+    color: #f0f0f0;
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+  }
 </style>
 </head>
+<body class="flex flex-col h-screen">
 
-<body class="text-zinc-400 antialiased selection:bg-cyan-500/30">
+  <!-- Header -->
+  <h1 class="text-center text-4xl md:text-5xl font-black mt-4 mb-4">
+    LockboxDOCs
+  </h1>
 
-<div class="obsidian-grain"></div>
-<div class="prism-leak animate-prism-drift"></div>
-
-<div class="shutter-blade w-1/2 left-0 animate-shutter-open"></div>
-<div class="shutter-blade w-1/2 right-0 origin-right animate-shutter-open"></div>
-
-<main class="relative z-10 flex flex-col h-screen p-4 md:p-8">
-
-<header class="flex flex-col md:flex-row justify-between items-end mb-8 border-b border-zinc-800/50 pb-6">
-
-<div>
-<div class="flex items-center gap-3">
-<div class="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
-<span class="font-mono text-[10px] tracking-[0.3em] uppercase opacity-50">Secure Node // 04-X</span>
-</div>
-
-<h1 class="text-4xl md:text-5xl font-black tracking-tighter text-zinc-100 uppercase italic">
-Lockbox<span class="text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 to-zinc-500">Docs</span>
-</h1>
-</div>
-
-</header>
-
-<div class="relative flex flex-1 flex-col md:flex-row gap-6 min-h-0">
-
-<aside class="hidden lg:flex flex-col justify-between w-16 shrink-0 py-4 border-r border-zinc-800/50"></aside>
-
-<!-- DOCUMENT FRAME -->
-
-<div class="obsidian-frame flex-1 min-w-0 flex flex-col rounded-sm overflow-hidden group animate-glass-pulse">
-
-<div class="h-10 border-b border-zinc-800 flex items-center px-4 justify-between bg-black/40 shrink-0">
-
-<div class="flex gap-1.5">
-<div class="w-2 h-2 rounded-full bg-zinc-800"></div>
-<div class="w-2 h-2 rounded-full bg-zinc-800"></div>
-<div class="w-2 h-2 rounded-full bg-zinc-800"></div>
-</div>
-
-<div class="font-mono text-[9px] tracking-widest opacity-40 uppercase">
-View_Port: 1080p // Scale: 100%
-</div>
-
-</div>
-
-<!-- FIXED HEIGHT AREA -->
-
-<div class="flex-1 w-full overflow-hidden">
-
-<iframe
-src="https://docs.google.com/document/d/e/2PACX-1vRVc7erWwz9mKzotgjzU5NlPIFD8HOS4x-NoudGXMM5-HvYifdHLU4m9s43t28zgZTnxKjwlQlEWhAe/pub?embedded=true"
-class="w-full h-full border-0"
-allowfullscreen>
-</iframe>
-
-</div>
-
-</div>
-
-<aside class="w-full md:w-64 shrink-0"></aside>
-
-</div>
-
-</main>
-
-<script>
-document.addEventListener('mousemove',(e)=>{
-const prism=document.querySelector('.prism-leak')
-const x=e.clientX/window.innerWidth
-const y=e.clientY/window.innerHeight
-prism.style.transform=`translate(${x*20-10}%,${y*20-10}%) rotate(${x*5}deg)`
-})
-</script>
+  <!-- Document iframe -->
+  <div class="flex-1">
+    <iframe
+      src="https://docs.google.com/document/d/e/2PACX-1vRVc7erWwz9mKzotgjzU5NlPIFD8HOS4x-NoudGXMM5-HvYifdHLU4m9s43t28zgZTnxKjwlQlEWhAe/pub?embedded=true"
+      class="w-full h-full border-0"
+      allowfullscreen>
+    </iframe>
+  </div>
 
 </body>
 </html>
+
+
