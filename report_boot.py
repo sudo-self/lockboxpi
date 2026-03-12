@@ -1,7 +1,9 @@
-import requests
+import urllib.request
+import urllib.parse
 import json
 import os
 import time
+import ssl
 from datetime import datetime
 
 # Configuration
@@ -44,11 +46,16 @@ def get_stats():
 def send_report():
     data = get_stats()
     try:
-        # Google Apps Script requires a redirect, but we need to ensure the payload follows it.
-        # Alternatively, using allow_redirects=True with requests usually handles this, 
-        # but GAS sometimes behaves weirdly. Let's send as json but force following.
-        response = requests.post(WEB_APP_URL, json=data, allow_redirects=True, timeout=30)
-        print(f"Report Status: {response.text}")
+        req = urllib.request.Request(WEB_APP_URL)
+        req.add_header('Content-Type', 'application/json')
+        jsondata = json.dumps(data).encode('utf-8')
+        
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+
+        with urllib.request.urlopen(req, jsondata, timeout=30, context=ctx) as response:
+            print(f"Report Status: {response.read().decode('utf-8')}")
     except Exception as e:
         print(f"Failed to send report: {e}")
 

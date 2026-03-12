@@ -7,6 +7,9 @@ echo "Deploying to LockboxPi ($PI_IP)..."
 # 1. Push Core Files
 scp index.html $PI_USER@$PI_IP:/var/www/index.html
 scp bridge.py $PI_USER@$PI_IP:/var/www/bridge.py
+if [ -f "report_boot.py" ]; then
+    scp report_boot.py $PI_USER@$PI_IP:/var/www/report_boot.py
+fi
 
 # 2. Push Dumps Folder
 if [ -d "dumps" ]; then
