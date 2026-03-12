@@ -7,7 +7,7 @@ import ssl
 from datetime import datetime
 
 # Configuration
-WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyHfhHT2nKdQARTNKAHxT2LKTDcGCUc1Z9NgY9MSQX7mbstzREDqbI0zzGv7gxHI2F3/exec"
+WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyTaEZV9j6U-gYIi7kOwP-oGm6ZVzNB5l6DEFxdI1B3XDIlRwPCiTXxXKT7k1dA0XUu/exec"
 
 def get_stats():
     # Get Temp in F
