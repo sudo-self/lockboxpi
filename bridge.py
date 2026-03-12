@@ -97,7 +97,9 @@ def get_stats():
     if os.path.exists("/sys/class/thermal/thermal_zone0/temp"):
         try:
             with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
-                temp_val = str(round(int(f.read()) / 1000, 1))
+                celsius = int(f.read()) / 1000
+                fahrenheit = (celsius * 9/5) + 32
+                temp_val = str(round(fahrenheit, 1))
         except Exception as e:
             logging.error(f"Failed to read temp: {e}")
     
@@ -113,7 +115,7 @@ def get_stats():
             adb = "NONE"
 
     return jsonify(
-        cpu_temp=f"{temp_val}°C",
+        cpu_temp=f"{temp_val}°F",
         storage_free=get_storage_free(),
         uptime=get_uptime(),
         device=adb,
