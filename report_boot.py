@@ -44,8 +44,10 @@ def get_stats():
 def send_report():
     data = get_stats()
     try:
-        # Google Apps Script requires following redirects (handled by requests by default)
-        response = requests.post(WEB_APP_URL, data=json.dumps(data), timeout=30)
+        # Google Apps Script requires a redirect, but we need to ensure the payload follows it.
+        # Alternatively, using allow_redirects=True with requests usually handles this, 
+        # but GAS sometimes behaves weirdly. Let's send as json but force following.
+        response = requests.post(WEB_APP_URL, json=data, allow_redirects=True, timeout=30)
         print(f"Report Status: {response.text}")
     except Exception as e:
         print(f"Failed to send report: {e}")
