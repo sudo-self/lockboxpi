@@ -15,8 +15,9 @@ systemctl stop lockbox-tunnel.service 2>/dev/null
 systemctl disable lockbox-tunnel.service 2>/dev/null
 rm -f /etc/systemd/system/lockbox-tunnel.service
 
-# Create the named tunnel (ignores error if it already exists)
-cloudflared tunnel create $TUNNEL_NAME || true
+# Force delete if exists to regenerate the credentials json
+cloudflared tunnel delete -f $TUNNEL_NAME 2>/dev/null || true
+cloudflared tunnel create $TUNNEL_NAME
 
 # Extract the UUID of the tunnel
 TUNNEL_UUID=$(cloudflared tunnel list | grep -w $TUNNEL_NAME | awk '{print $1}')
