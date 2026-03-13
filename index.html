@@ -4,11 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LockboxPi | Tectonic Utility</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
-
     <style>
         :root {
             --base-crust: #0f1012;
@@ -58,7 +53,7 @@
 
         .brand { display: flex; align-items: center; color: var(--safe-core); }
         .brand a { color: inherit; text-decoration: none; }
-        .brand img { width: 24px; height: 24px; margin-right: 8px; }
+        .brand img { width: 20px; height: 20px; margin-right: 8px; }
         .dynamic-ip { color: var(--safe-core); font-weight: 900; }
 
         nav { display: flex; flex-direction: column; gap: 7px; padding: 4px; }
@@ -189,7 +184,8 @@
         
         <header>
             <div class="brand">
-                <img src="/dumps/ai.png" alt="Pi">
+                <div id="connStatus" class="dot" style="margin-right: 8px; width: 6px; height: 6px;"></div>
+                <img src="/dumps/pi.webp" alt="Pi">
                 <span id="brand-text">lockboxpi.local</span>
             </div>
             <div class="dynamic-ip" id="header-ip">0.0.0.0</div>
@@ -212,26 +208,8 @@
                 <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.1.89 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.11-.89-2-2-2z"/></svg>
                 <span>TERM</span>
             </div>
-            <div
-                onclick="window.open('https://t.me/darthberrypi_bot', '_blank')"
-                style="
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    background-color: #0088cc; /* Telegram blue */
-                    color: white;
-                    padding: 10px 16px;
-                    border-radius: 9999px; /* pill shape */
-                    cursor: pointer;
-                    transition: background 0.2s;
-                "
-                onmouseover="this.style.backgroundColor='#00a2ff'"
-                onmouseout="this.style.backgroundColor='#0088cc'"
-            >
-                <!-- White Telegram send icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="white" viewBox="0 0 24 24">
-                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                </svg>
+            <div class="nav-item" onclick="window.open('https://t.me/darthberrypi', '_blank')">
+                <img src="/dumps/icons/icon-192.png" style="width: 28px; height: 28px; margin-bottom: 2px; filter: grayscale(100%) brightness(1.5); transition: 0.2s;" class="nav-icon-img" alt="Telegram">
             </div>
         </nav>
 
@@ -248,7 +226,7 @@
 
                 <div class="data-grid">
                     <div class="data-cell action" onclick="window.location.href='/dumps/'">
-                        <div class="data-label">DATA</div>
+                        <div class="data-label">VAULT</div>
                         <div class="data-value" style="color: #ffcc00">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
@@ -335,18 +313,10 @@
 
             <div id="drop" class="tab-panel">
                 <div class="tectonic-card">
-                    <div class="data-label" style="font-size:13px">FILE TRANSFER OPTIONS</div>
-                    <div id="dropStatus" class="data-value accent" style="margin:10px 0; font-size:16px;">READY</div>
-                    <input type="file" id="filePicker" multiple style="display:none;" onchange="handleFileUpload(this.files)">
-                    
-                    <div style="display:flex; justify-content:center; margin: 15px 0;">
-                        <!-- HTTP Upload Button (Emerald) -->
-                        <button class="btn-action" style="height:64px; width:64px; border-radius:12px; border:2px solid #059669; background-color: #059669; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4); transition: 0.2s;" onclick="document.getElementById('filePicker').click()">
-                            <img src="/icon-192.png" style="width:36px; height:36px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));" alt="Upload HTTP">
-                        </button>
-                    </div>
-                    
-                    <div class="helper-text" id="dropHelper">Tap to upload from this device</div>
+                    <div class="data-label" style="font-size:13px">SNAPDROP P2P</div>
+                    <div id="dropStatus" class="data-value accent" style="margin:20px 0; font-size:20px;">ONLINE</div>
+                    <button class="btn-action" style="height:54px; width:80%" onclick="window.open('https://' + window.location.hostname + ':443', '_blank')">LAUNCH SNAPDROP</button>
+                    <div class="helper-text">LAN / WiFi File Transfer System</div>
                 </div>
             </div>
         </main>
@@ -354,49 +324,6 @@
 
     <script>
         const bridgeUrl = "/api";
-        
-        async function handleFileUpload(files) {
-            if (!files.length) return;
-            const status = document.getElementById('dropStatus');
-            const btn = document.querySelector('#drop .btn-action');
-            
-            status.textContent = "UPLOADING...";
-            status.style.color = "var(--accent-core)";
-                        btn.style.opacity = "0.5";
-            btn.disabled = true;
-
-            const formData = new FormData();
-            for (let i = 0; i < files.length; i++) {
-                formData.append('file', files[i]);
-            }
-
-            try {
-                const res = await fetch(`${bridgeUrl}/upload`, {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await res.json();
-                
-                if (data.status === 'success') {
-                    status.textContent = "SUCCESS";
-                    status.style.color = "var(--safe-core)";
-                                    } else {
-                    throw new Error(data.message || "Upload Failed");
-                }
-            } catch (err) {
-                console.error(err);
-                status.textContent = "ERROR";
-                status.style.color = "var(--danger-core)";
-                            } finally {
-                setTimeout(() => {
-                    status.textContent = "READY";
-                    status.style.color = "var(--accent-core)";
-                                        btn.style.opacity = "1";
-                    btn.disabled = false;
-                    document.getElementById('filePicker').value = "";
-                }, 2000);
-            }
-        }
 
         function switchTab(tabId, el) {
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -474,7 +401,7 @@
                 
                 const brandWrapper = document.querySelector('.brand');
                 const brandEl = document.getElementById('brand-text');
-                // Tunnel up = WAN (orange, clickable), Tunnel down = LAN (green, shows local IP)
+                // Tunnel up = WAN (orange, clickable), Tunnel down = LAN (green)
                 if (data.tunnel_url) {
                     brandEl.innerHTML = `<a href="https://lbpi.jessejesse.com" target="_blank">WAN</a>`;
                     brandWrapper.style.color = 'var(--cf-orange)';

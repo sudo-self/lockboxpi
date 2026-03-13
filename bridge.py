@@ -227,28 +227,6 @@ def run_lk_action(cmd):
     except Exception as e:
         return jsonify(status="error", output=str(e))
 
-
-
-@app.route('/api/upload', methods=['POST'])
-def upload_file():
-    try:
-        if 'file' not in request.files:
-            return jsonify({"status": "error", "message": "No files provided"}), 400
-        
-        files = request.files.getlist('file')
-        saved_count = 0
-        for file in files:
-            if file.filename == '': continue
-            save_path = os.path.join(DUMPS_DIR, file.filename)
-            file.save(save_path)
-            subprocess.run(['sudo', 'chmod', '777', save_path], check=False)
-            subprocess.run(['sudo', 'chown', 'lockboxpi:www-data', save_path], check=False)
-            saved_count += 1
-            
-        return jsonify({"status": "success", "message": f"Uploaded {saved_count} files"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
 if __name__ == '__main__':
     # Apply touch orientation matrix for 3.5" TFT on startup
     try:
