@@ -215,7 +215,7 @@
             </div>
             <div class="nav-item" onclick="switchTab('drop', this)">
                 <img src="/icon-192.png" style="width: 28px; height: 28px; margin-bottom: 2px; filter: grayscale(100%) brightness(1.5); transition: 0.2s;" class="nav-icon-img" alt="Drop">
-                <span>DROP</span>
+
             </div>
         </nav>
 
@@ -322,7 +322,9 @@
                     <div class="data-label" style="font-size:13px">DIRECT SECURE UPLOAD</div>
                     <div id="dropStatus" class="data-value accent" style="margin:20px 0; font-size:20px;">READY</div>
                     <input type="file" id="filePicker" multiple style="display:none;" onchange="handleFileUpload(this.files)">
-                    <button class="btn-action" style="height:54px; width:80%; background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('/icon-512.png'); background-size: cover; background-position: center; color: var(--text-primary); text-shadow: 0 2px 4px rgba(0,0,0,0.8); border: 1px solid var(--accent-core);" onclick="document.getElementById('filePicker').click()">SELECT FILES</button>
+                    <button class="btn-action" style="height:64px; width:64px; border-radius:12px; border:2px solid #059669; background-color: #059669; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4); margin: 0 auto; transition: 0.2s;" onclick="document.getElementById('filePicker').click()">
+                        <img src="/icon-192.png" style="width:36px; height:36px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));" alt="Upload">
+                    </button>
                     <div class="helper-text" id="dropHelper">Files instantly save to /dumps via Python HTTP Backend</div>
                 </div>
             </div>
@@ -339,8 +341,7 @@
             
             status.textContent = "UPLOADING...";
             status.style.color = "var(--accent-core)";
-            btn.textContent = "PROCESSING...";
-            btn.style.opacity = "0.5";
+                        btn.style.opacity = "0.5";
             btn.disabled = true;
 
             const formData = new FormData();
@@ -358,21 +359,18 @@
                 if (data.status === 'success') {
                     status.textContent = "SUCCESS";
                     status.style.color = "var(--safe-core)";
-                    btn.textContent = "UPLOADED";
-                } else {
+                                    } else {
                     throw new Error(data.message || "Upload Failed");
                 }
             } catch (err) {
                 console.error(err);
                 status.textContent = "ERROR";
                 status.style.color = "var(--danger-core)";
-                btn.textContent = "RETRY";
-            } finally {
+                            } finally {
                 setTimeout(() => {
                     status.textContent = "READY";
                     status.style.color = "var(--accent-core)";
-                    btn.textContent = "SELECT FILES";
-                    btn.style.opacity = "1";
+                                        btn.style.opacity = "1";
                     btn.disabled = false;
                     document.getElementById('filePicker').value = "";
                 }, 2000);
