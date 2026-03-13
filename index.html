@@ -319,10 +319,11 @@
 
             <div id="drop" class="tab-panel">
                 <div class="tectonic-card">
-                    <div class="data-label" style="font-size:13px">BLUETOOTH OBEX PUSH</div>
-                    <div id="dropStatus" class="data-value accent" style="margin:20px 0; font-size:20px;">STANDBY</div>
-                    <button class="btn-action" style="height:54px; width:80%" onclick="makeDiscoverable()">BEAM FILES (3 MIN)</button>
-                    <div class="helper-text" id="dropHelper">Pair to 'LockboxPi' and Send. Files save to /dumps</div>
+                    <div class="data-label" style="font-size:13px">DIRECT SECURE UPLOAD</div>
+                    <div id="dropStatus" class="data-value accent" style="margin:20px 0; font-size:20px;">READY</div>
+                    <input type="file" id="filePicker" multiple style="display:none;" onchange="handleFileUpload(this.files)">
+                    <button class="btn-action" style="height:54px; width:80%; background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('/icon-512.png'); background-size: cover; background-position: center; color: var(--text-primary); text-shadow: 0 2px 4px rgba(0,0,0,0.8); border: 1px solid var(--accent-core);" onclick="document.getElementById('filePicker').click()">SELECT FILES</button>
+                    <div class="helper-text" id="dropHelper">Files instantly save to /dumps via Python HTTP Backend</div>
                 </div>
             </div>
         </main>
@@ -331,39 +332,50 @@
     <script>
         const bridgeUrl = "/api";
 
-        async function makeDiscoverable() {
-            const btn = document.querySelector('#drop .btn-action');
+        async function handleFileUpload(files) {
+            if (!files.length) return;
             const status = document.getElementById('dropStatus');
-            btn.textContent = "PAIRING...";
+            const btn = document.querySelector('#drop .btn-action');
+            
+            status.textContent = "UPLOADING...";
+            status.style.color = "var(--accent-core)";
+            btn.textContent = "PROCESSING...";
             btn.style.opacity = "0.5";
             btn.disabled = true;
 
+            const formData = new FormData();
+            for (let i = 0; i < files.length; i++) {
+                formData.append('file', files[i]);
+            }
+
             try {
-                const res = await fetch(`${bridgeUrl}/bluetooth/discover`, { method: 'POST' });
+                const res = await fetch(`${bridgeUrl}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
                 const data = await res.json();
+                
                 if (data.status === 'success') {
-                    status.textContent = "DISCOVERABLE";
+                    status.textContent = "SUCCESS";
                     status.style.color = "var(--safe-core)";
-                    btn.textContent = "DISCOVERABLE (3m)";
-                    
-                    // Reset UI after 3 mins
-                    setTimeout(() => {
-                        status.textContent = "STANDBY";
-                        status.style.color = "var(--accent-core)";
-                        btn.textContent = "BEAM FILES (3 MIN)";
-                        btn.style.opacity = "1";
-                        btn.disabled = false;
-                    }, 180000);
+                    btn.textContent = "UPLOADED";
                 } else {
-                    throw new Error(data.message);
+                    throw new Error(data.message || "Upload Failed");
                 }
             } catch (err) {
                 console.error(err);
                 status.textContent = "ERROR";
                 status.style.color = "var(--danger-core)";
                 btn.textContent = "RETRY";
-                btn.style.opacity = "1";
-                btn.disabled = false;
+            } finally {
+                setTimeout(() => {
+                    status.textContent = "READY";
+                    status.style.color = "var(--accent-core)";
+                    btn.textContent = "SELECT FILES";
+                    btn.style.opacity = "1";
+                    btn.disabled = false;
+                    document.getElementById('filePicker').value = "";
+                }, 2000);
             }
         }
 
