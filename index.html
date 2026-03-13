@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LockboxPi | Tectonic Utility</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+
     <style>
         :root {
             --base-crust: #0f1012;
@@ -314,7 +319,7 @@
                 <div class="tectonic-card">
                     <div class="data-label" style="font-size:13px">BLUETOOTH OBEX PUSH</div>
                     <div id="dropStatus" class="data-value accent" style="margin:20px 0; font-size:20px;">STANDBY</div>
-                    <button class="btn-action" style="height:54px; width:80%" onclick="makeDiscoverable()">BEAM FILES (3 MIN)</button>
+                    <button class="btn-action" style="height:54px; width:80%; background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('/icon-512.png'); background-size: cover; background-position: center; color: var(--text-primary); text-shadow: 0 2px 4px rgba(0,0,0,0.8); border: 1px solid var(--accent-core);" onclick="makeDiscoverable()">BEAM FILES (3 MIN)</button>
                     <div class="helper-text" id="dropHelper">Pair to 'LockboxPi' and Send. Files save to /dumps</div>
                 </div>
             </div>

@@ -15,6 +15,7 @@ fi
 if [ -d "dumps" ]; then
     echo "Syncing dumps repository..."
     scp -r dumps/* $PI_USER@$PI_IP:/var/www/dumps/
+    scp dumps/icons/* $PI_USER@$PI_IP:/var/www/
 fi
 
 # 3. Handle Header
