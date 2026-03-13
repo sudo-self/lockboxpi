@@ -190,7 +190,7 @@
         <header>
             <div class="brand">
                 <div id="connStatus" class="dot" style="margin-right: 8px; width: 6px; height: 6px;"></div>
-                <img src="/dumps/pi.webp" alt="Pi">
+                <img src="/dumps/ai.png" alt="Pi">
                 <span id="brand-text">lockboxpi.local</span>
             </div>
             <div class="dynamic-ip" id="header-ip">0.0.0.0</div>
@@ -213,9 +213,26 @@
                 <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.1.89 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.11-.89-2-2-2z"/></svg>
                 <span>TERM</span>
             </div>
-            <div class="nav-item" style="color:lightblue" onclick="window.open('https://t.me/darthberrypi_bot', '_blank')">
-                <span>@BOT</span>
-
+            <div
+                onclick="window.open('https://t.me/darthberrypi_bot', '_blank')"
+                style="
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    background-color: #0088cc; /* Telegram blue */
+                    color: white;
+                    padding: 10px 16px;
+                    border-radius: 9999px; /* pill shape */
+                    cursor: pointer;
+                    transition: background 0.2s;
+                "
+                onmouseover="this.style.backgroundColor='#00a2ff'"
+                onmouseout="this.style.backgroundColor='#0088cc'"
+            >
+                <!-- White Telegram send icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="white" viewBox="0 0 24 24">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                </svg>
             </div>
         </nav>
 
