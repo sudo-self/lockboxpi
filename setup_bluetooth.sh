@@ -1,5 +1,11 @@
 #!/bin/bash
 echo "Installing Bluetooth OBEX Push daemon..."
+
+# Fix SDP Session setup failed by enabling compatibility mode
+echo "053053lb" | sudo -S sed -i 's/bluetoothd$/bluetoothd -C/' /lib/systemd/system/bluetooth.service
+echo "053053lb" | sudo -S systemctl daemon-reload
+echo "053053lb" | sudo -S systemctl restart bluetooth
+
 echo "053053lb" | sudo -S apt-get update
 echo "053053lb" | sudo -S apt-get install -y bluez bluez-obexd obexpushd
 

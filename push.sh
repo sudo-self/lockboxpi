@@ -40,7 +40,7 @@ ssh lockboxpi@$PI_IP "
     echo '053053lb' | sudo -S chown -R lockboxpi:www-data /var/www && \
     echo '053053lb' | sudo -S chmod -R 755 /var/www && \
     echo '053053lb' | sudo -S chmod -R 777 /var/www/dumps && \
-    echo 'xinput set-prop \"ADS7846 Touchscreen\" \"Coordinate Transformation Matrix\" 1.1 0 -0.05 0 1.1 -0.05 0 0 1 || true' >> /home/lockboxpi/.xsessionrc && \
+    echo 'xinput set-prop \"ADS7846 Touchscreen\" \"Coordinate Transformation Matrix\" -1 0 1 0 1 0 0 0 1 || true' >> /home/lockboxpi/.xsessionrc && \
     echo 'xinput set-prop \"ADS7846 Touchscreen\" \"Evdev Axis Inversion\" 1 0 || true' >> /home/lockboxpi/.xsessionrc && \
     chmod +x /home/lockboxpi/.xsessionrc && \
     echo '053053lb' | sudo -S systemctl restart lockbox-bridge.service && \
