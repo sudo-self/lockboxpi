@@ -28,7 +28,7 @@ if [ -f "dumps.conf" ]; then
     scp dumps.conf $PI_USER@$PI_IP:/home/lockboxpi/dumps.conf
 fi
 if [ -f "setup_tunnel.sh" ]; then
-    scp cert.pem setup_bluetooth.sh fix_touch.sh $PI_USER@$PI_IP:/home/lockboxpi/
+    scp cert.pem fix_touch.sh $PI_USER@$PI_IP:/home/lockboxpi/
     scp setup_tunnel.sh $PI_USER@$PI_IP:/home/lockboxpi/setup_tunnel.sh
 fi
 
@@ -40,6 +40,11 @@ ssh lockboxpi@$PI_IP "
     echo '053053lb' | sudo -S chown -R lockboxpi:www-data /var/www && \
     echo '053053lb' | sudo -S chmod -R 755 /var/www && \
     echo '053053lb' | sudo -S chmod -R 777 /var/www/dumps && \
+    # Remove Bluetooth completely
+    echo '053053lb' | sudo -S systemctl stop bluetooth 2>/dev/null || true && \
+    echo '053053lb' | sudo -S systemctl disable bluetooth 2>/dev/null || true && \
+    echo '053053lb' | sudo -S rfkill block bluetooth 2>/dev/null || true && \
+    # Touch screen fixes
     echo 'xinput set-prop \"ADS7846 Touchscreen\" \"Coordinate Transformation Matrix\" -1 0 1 0 1 0 0 0 1 || true' >> /home/lockboxpi/.xsessionrc && \
     echo 'xinput set-prop \"ADS7846 Touchscreen\" \"Evdev Axis Inversion\" 1 0 || true' >> /home/lockboxpi/.xsessionrc && \
     chmod +x /home/lockboxpi/.xsessionrc && \
