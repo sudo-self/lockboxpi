@@ -70,6 +70,8 @@
         .nav-item.active { box-shadow: var(--bevel-inner); background: var(--base-crust); }
         .nav-item svg { width: 30px; fill: var(--text-dim); margin-bottom: 2px; }
         .nav-item.active svg { fill: var(--accent-core); filter: drop-shadow(0 0 5px var(--accent-glow)); }
+        .nav-item.active .nav-icon-img { filter: drop-shadow(0 0 5px var(--accent-glow)) !important; opacity: 1; }
+        .nav-icon-img { opacity: 0.5; }
         .nav-item span { font-size: 13px; font-weight: 900; color: var(--text-dim); }
 
         .usb-indicator {
@@ -212,7 +214,7 @@
                 <span>TERM</span>
             </div>
             <div class="nav-item" onclick="switchTab('drop', this)">
-                <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.36 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
+                <img src="/icon-192.png" style="width: 28px; height: 28px; margin-bottom: 2px; filter: grayscale(100%) brightness(1.5); transition: 0.2s;" class="nav-icon-img" alt="Drop">
                 <span>DROP</span>
             </div>
         </nav>
@@ -319,7 +321,7 @@
                 <div class="tectonic-card">
                     <div class="data-label" style="font-size:13px">BLUETOOTH OBEX PUSH</div>
                     <div id="dropStatus" class="data-value accent" style="margin:20px 0; font-size:20px;">STANDBY</div>
-                    <button class="btn-action" style="height:54px; width:80%; background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('/icon-512.png'); background-size: cover; background-position: center; color: var(--text-primary); text-shadow: 0 2px 4px rgba(0,0,0,0.8); border: 1px solid var(--accent-core);" onclick="makeDiscoverable()">BEAM FILES (3 MIN)</button>
+                    <button class="btn-action" style="height:54px; width:80%" onclick="makeDiscoverable()">BEAM FILES (3 MIN)</button>
                     <div class="helper-text" id="dropHelper">Pair to 'LockboxPi' and Send. Files save to /dumps</div>
                 </div>
             </div>

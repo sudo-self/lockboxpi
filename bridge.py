@@ -236,9 +236,9 @@ def run_lk_action(cmd):
 def bt_discover():
     try:
         # Make discoverable and pairable
-        subprocess.run(['sudo', 'bluetoothctl', 'system-alias', 'LockboxPi'], check=True)
-        subprocess.run(['sudo', 'bluetoothctl', 'discoverable', 'on'], check=True)
-        subprocess.run(['sudo', 'bluetoothctl', 'pairable', 'on'], check=True)
+        subprocess.run('echo "053053lb" | sudo -S bluetoothctl system-alias LockboxPi', shell=True, check=True)
+        subprocess.run('echo "053053lb" | sudo -S bluetoothctl discoverable on', shell=True, check=True)
+        subprocess.run('echo "053053lb" | sudo -S bluetoothctl pairable on', shell=True, check=True)
         return jsonify({"status": "success", "device_name": "LockboxPi", "message": "Bluetooth Discoverable. Beam files to LockboxPi."})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
