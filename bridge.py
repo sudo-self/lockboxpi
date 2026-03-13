@@ -78,17 +78,13 @@ def check_usb_devices():
     return mtk, usb_active
 
 def get_tunnel_url():
+    # Check if cloudflared tunnel service is running
     try:
-        if os.path.exists("/tmp/cloudflared.log"):
-            with open("/tmp/cloudflared.log", "r") as f:
-                for line in f:
-                    if "trycloudflare.com" in line:
-                        parts = line.split("https://")
-                        if len(parts) > 1:
-                            url = "https://" + parts[1].split()[0].replace("|", "").strip()
-                            return url
+        result = subprocess.run(["systemctl", "is-active", "cloudflared"], capture_output=True, text=True)
+        if result.stdout.strip() == "active":
+            return "https://lbpi.jessejesse.com"
     except Exception as e:
-        logging.error(f"Failed to get tunnel URL: {e}")
+        logging.error(f"Failed to check tunnel status: {e}")
     return None
 
 @app.route('/stats')
