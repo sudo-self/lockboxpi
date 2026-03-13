@@ -338,40 +338,7 @@
 
     <script>
         const bridgeUrl = "/api";
-        async function makeDiscoverable() {
-            const btn = document.querySelector('#drop .btn-action');
-            const status = document.getElementById('dropStatus');
-            btn.style.opacity = "0.5";
-            btn.disabled = true;
-
-            try {
-                const res = await fetch(`${bridgeUrl}/bluetooth/discover`, { method: 'POST' });
-                const data = await res.json();
-                if (data.status === 'success') {
-                    status.textContent = "PAIR (3m)";
-                    status.style.color = "var(--safe-core)";
-                    
-                    // Reset UI after 3 mins
-                    setTimeout(() => {
-                        status.textContent = "READY";
-                        status.style.color = "var(--accent-core)";
-                        btn.style.opacity = "1";
-                        btn.disabled = false;
-                    }, 180000);
-                } else {
-                    throw new Error(data.message);
-                }
-            } catch (err) {
-                console.error(err);
-                status.textContent = "ERROR";
-                status.style.color = "var(--danger-core)";
-                btn.style.opacity = "1";
-                btn.disabled = false;
-            }
-        }
         
-
-
         async function handleFileUpload(files) {
             if (!files.length) return;
             const status = document.getElementById('dropStatus');
