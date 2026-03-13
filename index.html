@@ -323,19 +323,14 @@
                     <div id="dropStatus" class="data-value accent" style="margin:10px 0; font-size:16px;">READY</div>
                     <input type="file" id="filePicker" multiple style="display:none;" onchange="handleFileUpload(this.files)">
                     
-                    <div style="display:flex; justify-content:center; gap:20px; margin: 15px 0;">
+                    <div style="display:flex; justify-content:center; margin: 15px 0;">
                         <!-- HTTP Upload Button (Emerald) -->
                         <button class="btn-action" style="height:64px; width:64px; border-radius:12px; border:2px solid #059669; background-color: #059669; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4); transition: 0.2s;" onclick="document.getElementById('filePicker').click()">
                             <img src="/icon-192.png" style="width:36px; height:36px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));" alt="Upload HTTP">
                         </button>
-                        
-                        <!-- Bluetooth Pair Button (Blue) -->
-                        <button class="btn-action" style="height:64px; width:64px; border-radius:12px; border:2px solid #2563eb; background-color: #2563eb; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); transition: 0.2s;" onclick="makeDiscoverable()">
-                            <svg viewBox="0 0 24 24" style="width:36px; fill:#fff; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));"><path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"/></svg>
-                        </button>
                     </div>
                     
-                    <div class="helper-text" id="dropHelper">Green: Upload from this device<br>Blue: Pair & Beam from phone</div>
+                    <div class="helper-text" id="dropHelper">Tap to upload from this device</div>
                 </div>
             </div>
         </main>
