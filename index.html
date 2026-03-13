@@ -458,14 +458,11 @@
                 
                 const brandWrapper = document.querySelector('.brand');
                 const brandEl = document.getElementById('brand-text');
-                if (data.tunnel_url) {
-                    const shortUrl = data.tunnel_url.replace('https://', '');
-                    brandEl.innerHTML = `<a href="${data.tunnel_url}" target="_blank">${shortUrl}</a>`;
-                    brandWrapper.style.color = 'var(--cf-orange)';
-                } else {
-                    brandEl.textContent = 'lockboxpi.local';
-                    brandWrapper.style.color = 'var(--safe-core)';
-                }
+                // Always show tunnel URL in orange (or default to lbpi.jessejesse.com)
+                const displayUrl = data.tunnel_url ? data.tunnel_url.replace('https://', '') : 'lbpi.jessejesse.com';
+                const linkUrl = data.tunnel_url || 'https://lbpi.jessejesse.com';
+                brandEl.innerHTML = `<a href="${linkUrl}" target="_blank">${displayUrl}</a>`;
+                brandWrapper.style.color = 'var(--cf-orange)';
 
                 document.getElementById('val-temp').textContent = data.cpu_temp;
                 document.getElementById('val-storage').textContent = data.storage_free;
