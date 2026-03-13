@@ -458,11 +458,14 @@
                 
                 const brandWrapper = document.querySelector('.brand');
                 const brandEl = document.getElementById('brand-text');
-                // Always show tunnel URL in orange (or default to lbpi.jessejesse.com)
-                const displayUrl = data.tunnel_url ? data.tunnel_url.replace('https://', '') : 'lbpi.jessejesse.com';
-                const linkUrl = data.tunnel_url || 'https://lbpi.jessejesse.com';
-                brandEl.innerHTML = `<a href="${linkUrl}" target="_blank">${displayUrl}</a>`;
-                brandWrapper.style.color = 'var(--cf-orange)';
+                // Tunnel up = WAN (orange, clickable), Tunnel down = LAN (green, shows local IP)
+                if (data.tunnel_url) {
+                    brandEl.innerHTML = `<a href="https://lbpi.jessejesse.com" target="_blank">WAN</a>`;
+                    brandWrapper.style.color = 'var(--cf-orange)';
+                } else {
+                    brandEl.textContent = 'LAN';
+                    brandWrapper.style.color = 'var(--safe-core)';
+                }
 
                 document.getElementById('val-temp').textContent = data.cpu_temp;
                 document.getElementById('val-storage').textContent = data.storage_free;
