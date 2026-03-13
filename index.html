@@ -312,10 +312,10 @@
 
             <div id="drop" class="tab-panel">
                 <div class="tectonic-card">
-                    <div class="data-label" style="font-size:13px">SNAPDROP P2P</div>
-                    <div id="dropStatus" class="data-value accent" style="margin:20px 0; font-size:20px;">ONLINE</div>
-                    <button class="btn-action" style="height:54px; width:80%" onclick="window.open('https://' + window.location.hostname + ':443', '_blank')">LAUNCH SNAPDROP</button>
-                    <div class="helper-text">LAN / WiFi File Transfer System</div>
+                    <div class="data-label" style="font-size:13px">BLUETOOTH OBEX PUSH</div>
+                    <div id="dropStatus" class="data-value accent" style="margin:20px 0; font-size:20px;">STANDBY</div>
+                    <button class="btn-action" style="height:54px; width:80%" onclick="makeDiscoverable()">BEAM FILES (3 MIN)</button>
+                    <div class="helper-text" id="dropHelper">Pair to 'LockboxPi' and Send. Files save to /dumps</div>
                 </div>
             </div>
         </main>
@@ -323,6 +323,42 @@
 
     <script>
         const bridgeUrl = "/api";
+
+        async function makeDiscoverable() {
+            const btn = document.querySelector('#drop .btn-action');
+            const status = document.getElementById('dropStatus');
+            btn.textContent = "PAIRING...";
+            btn.style.opacity = "0.5";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${bridgeUrl}/bluetooth/discover`, { method: 'POST' });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    status.textContent = "DISCOVERABLE";
+                    status.style.color = "var(--safe-core)";
+                    btn.textContent = "DISCOVERABLE (3m)";
+                    
+                    // Reset UI after 3 mins
+                    setTimeout(() => {
+                        status.textContent = "STANDBY";
+                        status.style.color = "var(--accent-core)";
+                        btn.textContent = "BEAM FILES (3 MIN)";
+                        btn.style.opacity = "1";
+                        btn.disabled = false;
+                    }, 180000);
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (err) {
+                console.error(err);
+                status.textContent = "ERROR";
+                status.style.color = "var(--danger-core)";
+                btn.textContent = "RETRY";
+                btn.style.opacity = "1";
+                btn.disabled = false;
+            }
+        }
 
         function switchTab(tabId, el) {
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));

@@ -231,6 +231,18 @@ def run_lk_action(cmd):
     except Exception as e:
         return jsonify(status="error", output=str(e))
 
+
+@app.route('/api/bluetooth/discover', methods=['POST'])
+def bt_discover():
+    try:
+        # Make discoverable and pairable
+        subprocess.run(['sudo', 'bluetoothctl', 'system-alias', 'LockboxPi'], check=True)
+        subprocess.run(['sudo', 'bluetoothctl', 'discoverable', 'on'], check=True)
+        subprocess.run(['sudo', 'bluetoothctl', 'pairable', 'on'], check=True)
+        return jsonify({"status": "success", "device_name": "LockboxPi", "message": "Bluetooth Discoverable. Beam files to LockboxPi."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 if __name__ == '__main__':
     # Apply touch orientation matrix for 3.5" TFT on startup
     try:

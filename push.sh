@@ -27,7 +27,7 @@ if [ -f "dumps.conf" ]; then
     scp dumps.conf $PI_USER@$PI_IP:/home/lockboxpi/dumps.conf
 fi
 if [ -f "setup_tunnel.sh" ]; then
-    scp cert.pem $PI_USER@$PI_IP:/home/lockboxpi/cert.pem
+    scp cert.pem setup_bluetooth.sh fix_touch.sh $PI_USER@$PI_IP:/home/lockboxpi/
     scp setup_tunnel.sh $PI_USER@$PI_IP:/home/lockboxpi/setup_tunnel.sh
 fi
 
@@ -39,6 +39,9 @@ ssh lockboxpi@$PI_IP "
     echo '053053lb' | sudo -S chown -R lockboxpi:www-data /var/www && \
     echo '053053lb' | sudo -S chmod -R 755 /var/www && \
     echo '053053lb' | sudo -S chmod -R 777 /var/www/dumps && \
+    echo 'xinput set-prop \"ADS7846 Touchscreen\" \"Coordinate Transformation Matrix\" 1.1 0 -0.05 0 1.1 -0.05 0 0 1 || true' >> /home/lockboxpi/.xsessionrc && \
+    echo 'xinput set-prop \"ADS7846 Touchscreen\" \"Evdev Axis Inversion\" 1 0 || true' >> /home/lockboxpi/.xsessionrc && \
+    chmod +x /home/lockboxpi/.xsessionrc && \
     echo '053053lb' | sudo -S systemctl restart lockbox-bridge.service && \
     echo '053053lb' | sudo -S systemctl reload apache2 && \
     export DISPLAY=:0 && \
@@ -47,3 +50,9 @@ ssh lockboxpi@$PI_IP "
 "
 
 echo "Deployment complete! Screen hard-refreshed."
+
+# 6. Git commit and push local repo
+echo "Committing and pushing local changes to git..."
+git add .
+git commit -m "Auto-deploy update via push.sh"
+git push
