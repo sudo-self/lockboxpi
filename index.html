@@ -208,8 +208,9 @@
                 <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.1.89 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.11-.89-2-2-2z"/></svg>
                 <span>TERM</span>
             </div>
-            <div class="nav-item" onclick="window.open('http://t.me/darthberrypi_bot', '_blank')">
-                <img src="/dumps/icons/icon-192.png" style="width: 28px; height: 28px; margin-bottom: 2px; filter: grayscale(100%) brightness(1.5); transition: 0.2s;" class="nav-icon-img" alt="Telegram">
+            <div class="nav-item" onclick="startTunnel()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px; color: var(--cf-orange);"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+                <span>TUNNEL</span>
             </div>
         </nav>
 
@@ -255,6 +256,10 @@
                     <a href="https://x.com/lightfighter719" target="_blank" class="github-link-btn" style="flex: 1;">
                         <svg width="16" height="16" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                         <span class="bling-text">@lightfighter719</span>
+                    </a>
+                    <a href="http://t.me/darthberrypi_bot" target="_blank" class="github-link-btn" style="flex: 1;">
+                        <img src="/dumps/darthberrypibot.png" style="width: 16px; height: 16px; border-radius: 50%;" alt="Telegram">
+                        <span class="bling-text">darthberrypi</span>
                     </a>
                 </div>
             </div>
@@ -437,6 +442,17 @@
             fetch(`${bridgeUrl}/lk/${cmd}`).then(res => res.json()).then(data => {
                 if(data.output) data.output.split('\n').forEach(line => logToTerm(line, 'sys'));
             });
+        }
+
+        function startTunnel() {
+            switchTab('term', document.querySelectorAll('.nav-item')[3]);
+            logToTerm(`Starting Cloudflare Tunnel...`);
+            fetch(`${bridgeUrl}/tunnel/start`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.output) data.output.split('\n').forEach(line => logToTerm(line, 'sys'));
+                })
+                .catch(() => logToTerm("FAILED TO START TUNNEL", "sys"));
         }
     </script>
 </body>

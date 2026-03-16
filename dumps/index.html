@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LockboxPi | Tectonic Utility</title>
+    <style>
+        :root {
+            --base-crust: #0f1012;
+            --plate-surface: #1a1c20;
+            --plate-highlight: #282a2f;
+            --plate-shadow: #08090a;
+            --accent-core: #ff9d00;
+            --accent-glow: rgba(255, 157, 0, 0.3);
+            --danger-core: #ff4444;
+            --safe-core: #00ffa2;
+            --cf-orange: #f38020;
+            --indigo-400: #818cf8;
+            --indigo-300: #a5b4fc;
+            --text-primary: #e2e4e9;
+            --text-dim: #5d626f;
+            --bevel-outer: 2px 2px 5px var(--plate-shadow), -1px -1px 3px var(--plate-highlight);
+            --bevel-inner: inset 2px 2px 4px var(--plate-shadow), inset -1px -1px 2px var(--plate-highlight);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--base-crust); font-family: 'Inter', sans-serif; color: var(--text-primary); overflow: hidden; display: flex; justify-content: center; align-items: center; }
+
+        .device-frame {
+            width: 480px; height: 320px;
+            background: var(--plate-surface);
+            position: relative;
+            display: grid;
+            grid-template-columns: 115px 1fr;
+            grid-template-rows: 45px 1fr;
+            padding: 4px;
+            border-radius: 8px;
+            box-shadow: 0 0 0 1px var(--plate-highlight), 10px 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .crt-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 2px;
+            pointer-events: none; z-index: 100; opacity: 0.1;
+        }
+
+        header {
+            grid-column: 1 / span 2; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 17px; background: var(--base-crust); margin: 4px; border-radius: 4px;
+            box-shadow: var(--bevel-inner); font-family: 'JetBrains Mono'; font-size: 15px;
+        }
+
+        .brand { display: flex; align-items: center; color: var(--safe-core); }
+        .brand a { color: inherit; text-decoration: none; }
+        .brand img { width: 20px; height: 20px; margin-right: 8px; }
+        .dynamic-ip { color: var(--safe-core); font-weight: 900; }
+
+        nav { display: flex; flex-direction: column; gap: 7px; padding: 4px; }
+        .nav-item {
+            flex: 1; background: var(--plate-surface); border-radius: 6px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: var(--bevel-outer); transition: 0.1s;
+        }
+        .nav-item.active { box-shadow: var(--bevel-inner); background: var(--base-crust); }
+        .nav-item svg { width: 30px; fill: var(--text-dim); margin-bottom: 2px; }
+        .nav-item.active svg { fill: var(--accent-core); filter: drop-shadow(0 0 5px var(--accent-glow)); }
+        .nav-item.active .nav-icon-img { filter: drop-shadow(0 0 5px var(--accent-glow)) !important; opacity: 1; }
+        .nav-icon-img { opacity: 0.5; }
+        .nav-item span { font-size: 13px; font-weight: 900; color: var(--text-dim); }
+
+        .usb-indicator {
+            height: 39px; display: flex; align-items: center; justify-content: center;
+            gap: 8px; font-size: 13px; font-family: 'JetBrains Mono'; font-weight: 900; color: var(--text-dim);
+            margin-top: 5px; border-top: 1px solid var(--plate-highlight); padding-top: 5px;
+        }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent-core); transition: 0.3s; }
+        .dot.active { background: var(--safe-core); box-shadow: 0 0 10px var(--safe-core); }
+
+        main { background: var(--base-crust); margin: 4px; border-radius: 6px; box-shadow: var(--bevel-inner); padding: 12px; overflow: hidden; }
+        .tab-panel { display: none; height: 100%; flex-direction: column; }
+        .tab-panel.active { display: flex; }
+
+        .tectonic-card {
+            background: var(--plate-surface);
+            border-radius: 8px; box-shadow: var(--bevel-outer);
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            margin-bottom: 10px; border: 1px solid var(--plate-highlight);
+        }
+
+        .status-orb {
+            width: 85px; height: 85px; border-radius: 50%; background: var(--base-crust);
+            box-shadow: var(--bevel-inner); display: flex; align-items: center; justify-content: center;
+            margin-bottom: 8px; transition: 0.3s; cursor: pointer;
+        }
+        .status-orb.unlocked { border: 3px solid var(--safe-core); box-shadow: var(--bevel-inner), 0 0 15px rgba(0, 255, 162, 0.2); }
+        .status-orb.locked { border: 3px solid var(--danger-core); }
+
+        .data-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; margin-bottom: 6px; }
+        .data-cell { background: var(--plate-surface); padding: 8px 5px; border-radius: 6px; box-shadow: var(--bevel-outer); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .data-cell.action { cursor: pointer; border: 1px solid var(--accent-glow); }
+        .data-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 900; margin-bottom: 4px; text-align: center; }
+        .data-value { font-family: 'JetBrains Mono'; font-size: 15px; color: var(--indigo-400); font-weight: 700; }
+        .data-value.accent { color: var(--accent-core); }
+
+        .github-link-btn {
+            background: var(--plate-surface);
+            padding: 8px;
+            border-radius: 6px;
+            box-shadow: var(--bevel-outer);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            font-family: 'JetBrains Mono';
+            font-size: 12px;
+            font-weight: 900;
+            border: 1px solid var(--plate-highlight);
+        }
+        .bling-text {
+            color: var(--text-dim);
+        }
+        .github-link-btn:active { box-shadow: var(--bevel-inner); transform: translateY(1px); }
+        .github-link-btn svg { fill: var(--text-dim); transition: fill 0.3s; }
+        .github-link-btn:hover svg { fill: #ffffff; }
+
+        .helper-text {
+            font-family: 'JetBrains Mono';
+            font-size: 11px;
+            color: var(--indigo-300);
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        .terminal { flex: 1; background: #050505; border-radius: 4px; padding: 12px; font-family: 'JetBrains Mono'; font-size: 13px; color: #d1d5db; overflow-y: auto; box-shadow: inset 0 2px 10px #000; }
+        .input-wrap { display: grid; grid-template-columns: 1fr 65px 75px; gap: 6px; margin-top: 10px; height: 49px; }
+        
+        input {
+            background: var(--base-crust); border: none; box-shadow: var(--bevel-inner);
+            border-radius: 4px; padding: 0 12px; color: var(--text-primary);
+            font-family: 'JetBrains Mono'; font-size: 15px; outline: none;
+            height: 100%; width: 100%;
+            pointer-events: auto !important;
+        }
+
+        select {
+            background: var(--plate-surface); box-shadow: var(--bevel-outer); border: none;
+            border-radius: 4px; color: var(--text-primary); font-weight: 900;
+            font-size: 13px; cursor: pointer; padding: 0; width: 100%; height: 100%;
+            font-family: 'JetBrains Mono'; outline: none; appearance: none; -webkit-appearance: none;
+            text-align: center;
+        }
+        select:active { box-shadow: var(--bevel-inner); transform: translateY(1px); }
+        
+        .btn-action {
+            background: var(--plate-surface); box-shadow: var(--bevel-outer); border: none;
+            border-radius: 4px; color: var(--text-primary); font-weight: 900;
+            font-size: 13px; cursor: pointer; padding: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-action:active { box-shadow: var(--bevel-inner); transform: translateY(1px); }
+
+        .btn-xplt {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%23ff9d00'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+            background-position: right 6px center;
+            background-repeat: no-repeat;
+            border: 1px solid var(--accent-glow) !important;
+            padding: 0 15px !important;
+            color: var(--accent-core) !important;
+            text-align: center;
+            text-align-last: center;
+        }
+
+        .lock-label { text-align: center; width: 100%; }
+    </style>
+</head>
+<body>
+
+    <div class="device-frame">
+        <div class="crt-overlay"></div>
+        
+        <header>
+            <div class="brand">
+                <div id="connStatus" class="dot" style="margin-right: 8px; width: 6px; height: 6px;"></div>
+                <img src="/dumps/pi.webp" alt="Pi">
+                <span id="brand-text">lockboxpi.local</span>
+            </div>
+            <div class="dynamic-ip" id="header-ip">0.0.0.0</div>
+        </header>
+
+        <nav>
+            <div class="nav-item active" onclick="switchTab('adb', this)">
+                <svg viewBox="0 0 24 24"><path d="M7 17h10v-2h-1v-3c0-2.21-1.79-4-4-4s-4 1.79-4 4v3H7v2zm5-11c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>
+                <span>ADB</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('mtk', this)">
+                <svg viewBox="0 0 24 24"><path d="M13 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V9l-7-7z"/></svg>
+                <span>MTK</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('knife', this)">
+                <svg viewBox="0 0 24 24"><path d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.16.09-.36.14-.57.14s-.41-.05-.57-.14l-7.9-4.44c-.31-.17-.53-.5-.53-.88V7.5c0-.38.21-.71.53-.88l7.9-4.44c.16-.09.36-.14.57-.14s.41.05.57.14l7.9 4.44c.31.17.53.5.53.88v9z"/></svg>
+                <span>KNIFE</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('term', this)">
+                <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.1.89 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.11-.89-2-2-2z"/></svg>
+                <span>TERM</span>
+            </div>
+            <div class="nav-item" onclick="startTunnel()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px; color: var(--cf-orange);"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+                <span>TUNNEL</span>
+            </div>
+        </nav>
+
+        <main>
+            <div id="adb" class="tab-panel active">
+                <div class="tectonic-card">
+                    <div id="lockOrb" class="status-orb" onclick="configureWiFi()" style="overflow: hidden; background: #fff; border: 3px solid var(--danger-core); padding: 5px;">
+                        <svg viewBox="-10 -10 170 170" width="100%" height="100%">
+                            <path fill="#000" d="M 0,0 l 6,0 0,6 -6,0 z M 6,0 l 6,0 0,6 -6,0 z M 12,0 l 6,0 0,6 -6,0 z M 18,0 l 6,0 0,6 -6,0 z M 24,0 l 6,0 0,6 -6,0 z M 30,0 l 6,0 0,6 -6,0 z M 36,0 l 6,0 0,6 -6,0 z M 54,0 l 6,0 0,6 -6,0 z M 78,0 l 6,0 0,6 -6,0 z M 96,0 l 6,0 0,6 -6,0 z M 108,0 l 6,0 0,6 -6,0 z M 114,0 l 6,0 0,6 -6,0 z M 120,0 l 6,0 0,6 -6,0 z M 126,0 l 6,0 0,6 -6,0 z M 132,0 l 6,0 0,6 -6,0 z M 138,0 l 6,0 0,6 -6,0 z M 144,0 l 6,0 0,6 -6,0 z M 0,6 l 6,0 0,6 -6,0 z M 36,6 l 6,0 0,6 -6,0 z M 48,6 l 6,0 0,6 -6,0 z M 54,6 l 6,0 0,6 -6,0 z M 66,6 l 6,0 0,6 -6,0 z M 72,6 l 6,0 0,6 -6,0 z M 84,6 l 6,0 0,6 -6,0 z M 90,6 l 6,0 0,6 -6,0 z M 108,6 l 6,0 0,6 -6,0 z M 144,6 l 6,0 0,6 -6,0 z M 0,12 l 6,0 0,6 -6,0 z M 12,12 l 6,0 0,6 -6,0 z M 18,12 l 6,0 0,6 -6,0 z M 24,12 l 6,0 0,6 -6,0 z M 36,12 l 6,0 0,6 -6,0 z M 54,12 l 6,0 0,6 -6,0 z M 60,12 l 6,0 0,6 -6,0 z M 66,12 l 6,0 0,6 -6,0 z M 96,12 l 6,0 0,6 -6,0 z M 108,12 l 6,0 0,6 -6,0 z M 120,12 l 6,0 0,6 -6,0 z M 126,12 l 6,0 0,6 -6,0 z M 132,12 l 6,0 0,6 -6,0 z M 144,12 l 6,0 0,6 -6,0 z M 0,18 l 6,0 0,6 -6,0 z M 12,18 l 6,0 0,6 -6,0 z M 18,18 l 6,0 0,6 -6,0 z M 24,18 l 6,0 0,6 -6,0 z M 36,18 l 6,0 0,6 -6,0 z M 48,18 l 6,0 0,6 -6,0 z M 54,18 l 6,0 0,6 -6,0 z M 66,18 l 6,0 0,6 -6,0 z M 78,18 l 6,0 0,6 -6,0 z M 84,18 l 6,0 0,6 -6,0 z M 108,18 l 6,0 0,6 -6,0 z M 120,18 l 6,0 0,6 -6,0 z M 126,18 l 6,0 0,6 -6,0 z M 132,18 l 6,0 0,6 -6,0 z M 144,18 l 6,0 0,6 -6,0 z M 0,24 l 6,0 0,6 -6,0 z M 12,24 l 6,0 0,6 -6,0 z M 18,24 l 6,0 0,6 -6,0 z M 24,24 l 6,0 0,6 -6,0 z M 36,24 l 6,0 0,6 -6,0 z M 60,24 l 6,0 0,6 -6,0 z M 72,24 l 6,0 0,6 -6,0 z M 78,24 l 6,0 0,6 -6,0 z M 108,24 l 6,0 0,6 -6,0 z M 120,24 l 6,0 0,6 -6,0 z M 126,24 l 6,0 0,6 -6,0 z M 132,24 l 6,0 0,6 -6,0 z M 144,24 l 6,0 0,6 -6,0 z M 0,30 l 6,0 0,6 -6,0 z M 36,30 l 6,0 0,6 -6,0 z M 48,30 l 6,0 0,6 -6,0 z M 60,30 l 6,0 0,6 -6,0 z M 78,30 l 6,0 0,6 -6,0 z M 84,30 l 6,0 0,6 -6,0 z M 90,30 l 6,0 0,6 -6,0 z M 96,30 l 6,0 0,6 -6,0 z M 108,30 l 6,0 0,6 -6,0 z M 144,30 l 6,0 0,6 -6,0 z M 0,36 l 6,0 0,6 -6,0 z M 6,36 l 6,0 0,6 -6,0 z M 12,36 l 6,0 0,6 -6,0 z M 18,36 l 6,0 0,6 -6,0 z M 24,36 l 6,0 0,6 -6,0 z M 30,36 l 6,0 0,6 -6,0 z M 36,36 l 6,0 0,6 -6,0 z M 48,36 l 6,0 0,6 -6,0 z M 60,36 l 6,0 0,6 -6,0 z M 72,36 l 6,0 0,6 -6,0 z M 84,36 l 6,0 0,6 -6,0 z M 96,36 l 6,0 0,6 -6,0 z M 108,36 l 6,0 0,6 -6,0 z M 114,36 l 6,0 0,6 -6,0 z M 120,36 l 6,0 0,6 -6,0 z M 126,36 l 6,0 0,6 -6,0 z M 132,36 l 6,0 0,6 -6,0 z M 138,36 l 6,0 0,6 -6,0 z M 144,36 l 6,0 0,6 -6,0 z M 72,42 l 6,0 0,6 -6,0 z M 84,42 l 6,0 0,6 -6,0 z M 90,42 l 6,0 0,6 -6,0 z M 0,48 l 6,0 0,6 -6,0 z M 6,48 l 6,0 0,6 -6,0 z M 12,48 l 6,0 0,6 -6,0 z M 18,48 l 6,0 0,6 -6,0 z M 24,48 l 6,0 0,6 -6,0 z M 36,48 l 6,0 0,6 -6,0 z M 42,48 l 6,0 0,6 -6,0 z M 48,48 l 6,0 0,6 -6,0 z M 54,48 l 6,0 0,6 -6,0 z M 60,48 l 6,0 0,6 -6,0 z M 72,48 l 6,0 0,6 -6,0 z M 78,48 l 6,0 0,6 -6,0 z M 84,48 l 6,0 0,6 -6,0 z M 102,48 l 6,0 0,6 -6,0 z M 114,48 l 6,0 0,6 -6,0 z M 126,48 l 6,0 0,6 -6,0 z M 138,48 l 6,0 0,6 -6,0 z M 0,54 l 6,0 0,6 -6,0 z M 6,54 l 6,0 0,6 -6,0 z M 24,54 l 6,0 0,6 -6,0 z M 30,54 l 6,0 0,6 -6,0 z M 42,54 l 6,0 0,6 -6,0 z M 54,54 l 6,0 0,6 -6,0 z M 96,54 l 6,0 0,6 -6,0 z M 114,54 l 6,0 0,6 -6,0 z M 138,54 l 6,0 0,6 -6,0 z M 18,60 l 6,0 0,6 -6,0 z M 36,60 l 6,0 0,6 -6,0 z M 42,60 l 6,0 0,6 -6,0 z M 48,60 l 6,0 0,6 -6,0 z M 54,60 l 6,0 0,6 -6,0 z M 66,60 l 6,0 0,6 -6,0 z M 72,60 l 6,0 0,6 -6,0 z M 78,60 l 6,0 0,6 -6,0 z M 90,60 l 6,0 0,6 -6,0 z M 108,60 l 6,0 0,6 -6,0 z M 114,60 l 6,0 0,6 -6,0 z M 120,60 l 6,0 0,6 -6,0 z M 126,60 l 6,0 0,6 -6,0 z M 138,60 l 6,0 0,6 -6,0 z M 144,60 l 6,0 0,6 -6,0 z M 0,66 l 6,0 0,6 -6,0 z M 12,66 l 6,0 0,6 -6,0 z M 48,66 l 6,0 0,6 -6,0 z M 54,66 l 6,0 0,6 -6,0 z M 60,66 l 6,0 0,6 -6,0 z M 66,66 l 6,0 0,6 -6,0 z M 84,66 l 6,0 0,6 -6,0 z M 90,66 l 6,0 0,6 -6,0 z M 102,66 l 6,0 0,6 -6,0 z M 114,66 l 6,0 0,6 -6,0 z M 120,66 l 6,0 0,6 -6,0 z M 144,66 l 6,0 0,6 -6,0 z M 0,72 l 6,0 0,6 -6,0 z M 6,72 l 6,0 0,6 -6,0 z M 18,72 l 6,0 0,6 -6,0 z M 30,72 l 6,0 0,6 -6,0 z M 36,72 l 6,0 0,6 -6,0 z M 54,72 l 6,0 0,6 -6,0 z M 66,72 l 6,0 0,6 -6,0 z M 78,72 l 6,0 0,6 -6,0 z M 84,72 l 6,0 0,6 -6,0 z M 90,72 l 6,0 0,6 -6,0 z M 96,72 l 6,0 0,6 -6,0 z M 102,72 l 6,0 0,6 -6,0 z M 108,72 l 6,0 0,6 -6,0 z M 120,72 l 6,0 0,6 -6,0 z M 132,72 l 6,0 0,6 -6,0 z M 138,72 l 6,0 0,6 -6,0 z M 144,72 l 6,0 0,6 -6,0 z M 0,78 l 6,0 0,6 -6,0 z M 6,78 l 6,0 0,6 -6,0 z M 12,78 l 6,0 0,6 -6,0 z M 24,78 l 6,0 0,6 -6,0 z M 42,78 l 6,0 0,6 -6,0 z M 48,78 l 6,0 0,6 -6,0 z M 60,78 l 6,0 0,6 -6,0 z M 72,78 l 6,0 0,6 -6,0 z M 96,78 l 6,0 0,6 -6,0 z M 114,78 l 6,0 0,6 -6,0 z M 126,78 l 6,0 0,6 -6,0 z M 138,78 l 6,0 0,6 -6,0 z M 0,84 l 6,0 0,6 -6,0 z M 12,84 l 6,0 0,6 -6,0 z M 36,84 l 6,0 0,6 -6,0 z M 42,84 l 6,0 0,6 -6,0 z M 48,84 l 6,0 0,6 -6,0 z M 54,84 l 6,0 0,6 -6,0 z M 90,84 l 6,0 0,6 -6,0 z M 126,84 l 6,0 0,6 -6,0 z M 138,84 l 6,0 0,6 -6,0 z M 144,84 l 6,0 0,6 -6,0 z M 0,90 l 6,0 0,6 -6,0 z M 12,90 l 6,0 0,6 -6,0 z M 18,90 l 6,0 0,6 -6,0 z M 24,90 l 6,0 0,6 -6,0 z M 48,90 l 6,0 0,6 -6,0 z M 60,90 l 6,0 0,6 -6,0 z M 72,90 l 6,0 0,6 -6,0 z M 84,90 l 6,0 0,6 -6,0 z M 90,90 l 6,0 0,6 -6,0 z M 102,90 l 6,0 0,6 -6,0 z M 114,90 l 6,0 0,6 -6,0 z M 120,90 l 6,0 0,6 -6,0 z M 126,90 l 6,0 0,6 -6,0 z M 144,90 l 6,0 0,6 -6,0 z M 0,96 l 6,0 0,6 -6,0 z M 12,96 l 6,0 0,6 -6,0 z M 18,96 l 6,0 0,6 -6,0 z M 24,96 l 6,0 0,6 -6,0 z M 36,96 l 6,0 0,6 -6,0 z M 54,96 l 6,0 0,6 -6,0 z M 72,96 l 6,0 0,6 -6,0 z M 78,96 l 6,0 0,6 -6,0 z M 84,96 l 6,0 0,6 -6,0 z M 96,96 l 6,0 0,6 -6,0 z M 102,96 l 6,0 0,6 -6,0 z M 108,96 l 6,0 0,6 -6,0 z M 114,96 l 6,0 0,6 -6,0 z M 120,96 l 6,0 0,6 -6,0 z M 132,96 l 6,0 0,6 -6,0 z M 48,102 l 6,0 0,6 -6,0 z M 54,102 l 6,0 0,6 -6,0 z M 60,102 l 6,0 0,6 -6,0 z M 78,102 l 6,0 0,6 -6,0 z M 96,102 l 6,0 0,6 -6,0 z M 120,102 l 6,0 0,6 -6,0 z M 126,102 l 6,0 0,6 -6,0 z M 132,102 l 6,0 0,6 -6,0 z M 0,108 l 6,0 0,6 -6,0 z M 6,108 l 6,0 0,6 -6,0 z M 12,108 l 6,0 0,6 -6,0 z M 18,108 l 6,0 0,6 -6,0 z M 24,108 l 6,0 0,6 -6,0 z M 30,108 l 6,0 0,6 -6,0 z M 36,108 l 6,0 0,6 -6,0 z M 48,108 l 6,0 0,6 -6,0 z M 54,108 l 6,0 0,6 -6,0 z M 66,108 l 6,0 0,6 -6,0 z M 72,108 l 6,0 0,6 -6,0 z M 84,108 l 6,0 0,6 -6,0 z M 96,108 l 6,0 0,6 -6,0 z M 108,108 l 6,0 0,6 -6,0 z M 120,108 l 6,0 0,6 -6,0 z M 126,108 l 6,0 0,6 -6,0 z M 132,108 l 6,0 0,6 -6,0 z M 138,108 l 6,0 0,6 -6,0 z M 144,108 l 6,0 0,6 -6,0 z M 0,114 l 6,0 0,6 -6,0 z M 36,114 l 6,0 0,6 -6,0 z M 66,114 l 6,0 0,6 -6,0 z M 96,114 l 6,0 0,6 -6,0 z M 120,114 l 6,0 0,6 -6,0 z M 126,114 l 6,0 0,6 -6,0 z M 0,120 l 6,0 0,6 -6,0 z M 12,120 l 6,0 0,6 -6,0 z M 18,120 l 6,0 0,6 -6,0 z M 24,120 l 6,0 0,6 -6,0 z M 36,120 l 6,0 0,6 -6,0 z M 48,120 l 6,0 0,6 -6,0 z M 60,120 l 6,0 0,6 -6,0 z M 66,120 l 6,0 0,6 -6,0 z M 90,120 l 6,0 0,6 -6,0 z M 96,120 l 6,0 0,6 -6,0 z M 102,120 l 6,0 0,6 -6,0 z M 108,120 l 6,0 0,6 -6,0 z M 114,120 l 6,0 0,6 -6,0 z M 120,120 l 6,0 0,6 -6,0 z M 126,120 l 6,0 0,6 -6,0 z M 132,120 l 6,0 0,6 -6,0 z M 138,120 l 6,0 0,6 -6,0 z M 144,120 l 6,0 0,6 -6,0 z M 0,126 l 6,0 0,6 -6,0 z M 12,126 l 6,0 0,6 -6,0 z M 18,126 l 6,0 0,6 -6,0 z M 24,126 l 6,0 0,6 -6,0 z M 36,126 l 6,0 0,6 -6,0 z M 48,126 l 6,0 0,6 -6,0 z M 72,126 l 6,0 0,6 -6,0 z M 78,126 l 6,0 0,6 -6,0 z M 96,126 l 6,0 0,6 -6,0 z M 102,126 l 6,0 0,6 -6,0 z M 108,126 l 6,0 0,6 -6,0 z M 120,126 l 6,0 0,6 -6,0 z M 132,126 l 6,0 0,6 -6,0 z M 138,126 l 6,0 0,6 -6,0 z M 144,126 l 6,0 0,6 -6,0 z M 0,132 l 6,0 0,6 -6,0 z M 12,132 l 6,0 0,6 -6,0 z M 18,132 l 6,0 0,6 -6,0 z M 24,132 l 6,0 0,6 -6,0 z M 36,132 l 6,0 0,6 -6,0 z M 48,132 l 6,0 0,6 -6,0 z M 54,132 l 6,0 0,6 -6,0 z M 60,132 l 6,0 0,6 -6,0 z M 78,132 l 6,0 0,6 -6,0 z M 84,132 l 6,0 0,6 -6,0 z M 96,132 l 6,0 0,6 -6,0 z M 114,132 l 6,0 0,6 -6,0 z M 132,132 l 6,0 0,6 -6,0 z M 144,132 l 6,0 0,6 -6,0 z M 0,138 l 6,0 0,6 -6,0 z M 36,138 l 6,0 0,6 -6,0 z M 48,138 l 6,0 0,6 -6,0 z M 60,138 l 6,0 0,6 -6,0 z M 72,138 l 6,0 0,6 -6,0 z M 78,138 l 6,0 0,6 -6,0 z M 90,138 l 6,0 0,6 -6,0 z M 96,138 l 6,0 0,6 -6,0 z M 108,138 l 6,0 0,6 -6,0 z M 114,138 l 6,0 0,6 -6,0 z M 120,138 l 6,0 0,6 -6,0 z M 126,138 l 6,0 0,6 -6,0 z M 144,138 l 6,0 0,6 -6,0 z M 0,144 l 6,0 0,6 -6,0 z M 6,144 l 6,0 0,6 -6,0 z M 12,144 l 6,0 0,6 -6,0 z M 18,144 l 6,0 0,6 -6,0 z M 24,144 l 6,0 0,6 -6,0 z M 30,144 l 6,0 0,6 -6,0 z M 36,144 l 6,0 0,6 -6,0 z M 48,144 l 6,0 0,6 -6,0 z M 60,144 l 6,0 0,6 -6,0 z M 72,144 l 6,0 0,6 -6,0 z M 84,144 l 6,0 0,6 -6,0 z M 114,144 l 6,0 0,6 -6,0 z M 120,144 l 6,0 0,6 -6,0 z M 126,144 l 6,0 0,6 -6,0 z M 132,144 l 6,0 0,6 -6,0 z M 138,144 l 6,0 0,6 -6,0 z M 144,144 l 6,0 0,6 -6,0 z " />
+                        </svg>
+                    </div>
+                    <div class="lock-label" id="lockStatus" style="color:#ffffff; font-size:15px; font-weight:900; letter-spacing: 1.5px;">lockboxpi.local</div>
+                </div>
+
+                <div class="data-grid">
+                    <div class="data-cell action" onclick="window.location.href='/dumps/'">
+                        <div class="data-label">VAULT</div>
+                        <div class="data-value" style="color: #ffcc00">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="data-cell">
+                        <div class="data-label">TEMP</div>
+                        <div class="data-value" id="val-temp" style="color: var(--danger-core)">--.-°F</div>
+                    </div>
+                    <div class="data-cell">
+                        <div class="data-label">FREE</div>
+                        <div class="data-value" id="val-storage" style="color: var(--safe-core)">--GB</div>
+                    </div>
+                    <div class="data-cell">
+                        <div class="data-label">UPTIME</div>
+                        <div class="data-value" id="val-uptime" style="color: var(--indigo-300)">--h --m</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 6px;">
+                    <a href="https://GitHub.com/sudo-self/lockboxpi" target="_blank" class="github-link-btn" style="flex: 1;">
+                        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                        <span class="bling-text">lockboxpi</span>
+                    </a>
+                    <a href="https://x.com/lightfighter719" target="_blank" class="github-link-btn" style="flex: 1;">
+                        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        <span class="bling-text">@lightfighter719</span>
+                    </a>
+                    <a href="http://t.me/darthberrypi_bot" target="_blank" class="github-link-btn" style="flex: 1;">
+                        <img src="/dumps/darthberrypibot.png" style="width: 16px; height: 16px; border-radius: 50%;" alt="Telegram">
+                        <span class="bling-text">darthberrypi</span>
+                    </a>
+                </div>
+            </div>
+
+            <div id="mtk" class="tab-panel">
+                <div class="tectonic-card">
+                    <div class="data-label" style="font-size:13px">MTK ENGINE</div>
+                    <div id="mtkStatus" class="data-value accent" style="margin:20px 0; font-size:20px;">DISCONNECTED</div>
+                    <button class="btn-action" style="height:54px; width:80%" onclick="runMtk('printgpt')">READ GPT TABLE</button>
+                    <div class="helper-text">Hold V UP + V Down and connect the USB</div>
+                </div>
+            </div>
+
+            <div id="knife" class="tab-panel">
+                <div class="tectonic-card">
+                    <div class="data-label" style="font-size:13px">FORENSIC MODULES</div>
+                    <div id="lkStatus" class="data-value accent" style="margin:20px 0; font-size:20px;">READY</div>
+                    <div style="display:flex; gap:15px;">
+                        <button class="btn-action" style="height:54px; padding:0 20px" onclick="runLk('pull-pattern')">PULL KEY</button>
+                        <button class="btn-action" style="height:54px; padding:0 20px" onclick="runLk('dump-system')">DUMP SYS</button>
+                    </div>
+                    <div class="helper-text">Ensure ADB is authorized on target device</div>
+                </div>
+            </div>
+
+            <div id="term" class="tab-panel">
+                <div class="terminal" id="termOutput"></div>
+                <div class="input-wrap">
+                    <input type="text" id="termInput" placeholder="$_ " ontouchstart="this.focus();">
+                    <button class="btn-action" onclick="pushCmd()">CMD</button>
+                    <select id="cmdSelect" class="btn-xplt" onchange="injectCmd()">
+                        <option value="">XPLT</option>
+                        <option value="lsusb">LSUSB</option>
+                        <option value="whoami">WHOAMI</option>
+                        <option value="uname -a">UNAME</option>
+                        <option value="adb devices">ADB_DEV</option>
+                        <option value="adb reboot bootloader">BOOT_LDR</option>
+                        <option value="adb shell getprop ro.product.model">ADB_MODEL</option>
+                        <option value="fastboot devices">FB_DEV</option>
+                        <option value="fastboot getvar all">FB_VARS</option>
+                        <option value="mtk printgpt">MTK_GPT</option>
+                        <option value="mtk e frp">MTK_FRP</option>
+                        <option value="knife pull-pattern">KNIFE_KEY</option>
+                        <option value="knife dump-system">KNIFE_DUMP</option>
+                        <option value="ip addr">IP_ADDR</option>
+                        <option value="df -h">DISK_FREE</option>
+                        <option value="dmesg | tail -n 20">SYS_LOG</option>
+                        <option value="DISPLAY=:0 xinput set-prop 'ADS7846 Touchscreen' 'Coordinate Transformation Matrix' 0 1 0 -1 0 1 0 0 1">TOUCH_ROTATE</option>
+                        <option value="DISPLAY=:0 xinput set-prop 'ADS7846 Touchscreen' 'Coordinate Transformation Matrix' -1 0 1 0 1 0 0 0 1">TOUCH_CALIB</option>
+                        <option value="adb install lockboxpi.apk">INSTALL_APK</option>
+                        <option value="sudo systemctl restart lockbox-bridge.service">RE_BRIDGE</option>
+                        <option value="sudo reboot">REBOOT</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="drop" class="tab-panel">
+                <div class="tectonic-card">
+                    <div class="data-label" style="font-size:13px">SNAPDROP P2P</div>
+                    <div id="dropStatus" class="data-value accent" style="margin:20px 0; font-size:20px;">ONLINE</div>
+                    <button class="btn-action" style="height:54px; width:80%" onclick="window.open('https://' + window.location.hostname + ':443', '_blank')">LAUNCH SNAPDROP</button>
+                    <div class="helper-text">LAN / WiFi File Transfer System</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const bridgeUrl = "/api";
+
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if(el) el.classList.add('active');
+        }
+
+        // WiFi Configuration Triggered by Lock Icon
+        function configureWiFi() {
+            const ssid = prompt("WIFI SSID:");
+            if (!ssid) return;
+            const psk = prompt(`PASSWORD FOR ${ssid}:`);
+            if (!psk) return;
+            const slot = prompt("SLOT (3 OR 4)?", "3");
+            if (slot !== "3" && slot !== "4") {
+                alert("INVALID SLOT");
+                return;
+            }
+
+            logToTerm(`Configuring WiFi Slot ${slot}...`, "sys");
+            
+            fetch(`${bridgeUrl}/wifi/connect`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ssid, psk, slot: parseInt(slot) })
+            })
+            .then(res => res.json())
+            .then(data => {
+                logToTerm(data.output, "sys");
+            })
+            .catch(() => logToTerm("CONFIG FAILED", "sys"));
+        }
+
+        function logToTerm(text, type = 'cmd') {
+            const out = document.getElementById('termOutput');
+            const ln = document.createElement('div');
+            ln.style.color = type === 'sys' ? '#d1d5db' : 'var(--accent-core)';
+            ln.style.marginBottom = '3px';
+            ln.textContent = `> ${text}`;
+            out.appendChild(ln);
+            out.scrollTop = out.scrollHeight;
+        }
+
+        function injectCmd() {
+            const sel = document.getElementById('cmdSelect');
+            if(sel.value) {
+                document.getElementById('termInput').value = sel.value;
+                sel.selectedIndex = 0;
+            }
+        }
+
+        function pushCmd() {
+            const input = document.getElementById('termInput');
+            const cmd = input.value.trim();
+            if (!cmd) return;
+            logToTerm(cmd);
+            input.value = '';
+            fetch(`${bridgeUrl}/terminal/run`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ command: cmd })
+            }).then(res => res.json()).then(data => {
+                if(data.output) data.output.split('\n').forEach(line => { if(line.trim()) logToTerm(line, 'sys'); });
+            }).catch(() => logToTerm("BRIDGE OFFLINE", "sys"));
+        }
+
+        function updateDashboard() {
+            fetch(`${bridgeUrl}/stats`).then(res => res.json()).then(data => {
+                const connDot = document.getElementById('connStatus');
+                connDot.classList.add('active');
+                
+                const ipEl = document.getElementById('header-ip');
+                ipEl.textContent = data.ip_address;
+                
+                const brandWrapper = document.querySelector('.brand');
+                const brandEl = document.getElementById('brand-text');
+                // Tunnel up = WAN (orange, clickable), Tunnel down = LAN (green)
+                if (data.tunnel_url) {
+                    brandEl.innerHTML = `<a href="https://lbpi.jessejesse.com" target="_blank">WAN</a>`;
+                    brandWrapper.style.color = 'var(--cf-orange)';
+                } else {
+                    brandEl.textContent = 'LAN';
+                    brandWrapper.style.color = 'var(--safe-core)';
+                }
+
+                document.getElementById('val-temp').textContent = data.cpu_temp;
+                document.getElementById('val-storage').textContent = data.storage_free;
+                document.getElementById('val-uptime').textContent = data.uptime;
+            }).catch(err => {
+                console.error("Stats check offline", err);
+                document.getElementById('connStatus').classList.remove('active');
+            })
+            .finally(() => {
+                setTimeout(updateDashboard, 6000);
+            });
+        }
+        updateDashboard();
+
+        function runMtk(cmd) {
+            switchTab('term', document.querySelectorAll('.nav-item')[3]);
+            logToTerm(`MTK: ${cmd}...`);
+            fetch(`${bridgeUrl}/mtk/${cmd}`).then(res => res.json()).then(data => {
+                if(data.output) data.output.split('\n').forEach(line => logToTerm(line, 'sys'));
+            });
+        }
+
+        function runLk(cmd) {
+            switchTab('term', document.querySelectorAll('.nav-item')[3]);
+            logToTerm(`Knife: ${cmd}...`);
+            fetch(`${bridgeUrl}/lk/${cmd}`).then(res => res.json()).then(data => {
+                if(data.output) data.output.split('\n').forEach(line => logToTerm(line, 'sys'));
+            });
+        }
+
+        function startTunnel() {
+            switchTab('term', document.querySelectorAll('.nav-item')[3]);
+            logToTerm(`Starting Cloudflare Tunnel...`);
+            fetch(`${bridgeUrl}/tunnel/start`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.output) data.output.split('\n').forEach(line => logToTerm(line, 'sys'));
+                })
+                .catch(() => logToTerm("FAILED TO START TUNNEL", "sys"));
+        }
+    </script>
+</body>
+</html>

@@ -87,6 +87,15 @@ def get_tunnel_url():
         logging.error(f"Failed to check tunnel status: {e}")
     return None
 
+@app.route('/tunnel/start', methods=['POST'])
+def start_tunnel():
+    try:
+        # Since cloudflared is installed as a systemd service, restarting it ensures it comes up fresh
+        subprocess.run(["sudo", "systemctl", "restart", "cloudflared"], check=True)
+        return jsonify(status="success", output="Cloudflare tunnel service restarted successfully.")
+    except Exception as e:
+        return jsonify(status="error", output=f"Failed to restart tunnel service: {str(e)}")
+
 @app.route('/stats')
 def get_stats():
     temp_val = "ERR"

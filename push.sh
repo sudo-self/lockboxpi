@@ -31,12 +31,16 @@ if [ -f "setup_tunnel.sh" ]; then
     scp cert.pem fix_touch.sh $PI_USER@$PI_IP:/home/lockboxpi/
     scp setup_tunnel.sh $PI_USER@$PI_IP:/home/lockboxpi/setup_tunnel.sh
 fi
+if [ -f "setup_ssl.sh" ]; then
+    scp setup_ssl.sh $PI_USER@$PI_IP:/home/lockboxpi/setup_ssl.sh
+fi
 
 # 5. Remote Commands with X11 Authority fix
 # We point to the lockboxpi user's .Xauthority file to gain control of the screen
 ssh lockboxpi@$PI_IP "
     echo '053053lb' | sudo -S mv /home/lockboxpi/dumps.conf /etc/apache2/conf-enabled/dumps.conf && \
     echo '053053lb' | sudo -S bash /home/lockboxpi/setup_tunnel.sh && \
+    echo '053053lb' | sudo -S bash /home/lockboxpi/setup_ssl.sh && \
     echo '053053lb' | sudo -S chown -R lockboxpi:www-data /var/www && \
     echo '053053lb' | sudo -S chmod -R 755 /var/www && \
     echo '053053lb' | sudo -S chmod -R 777 /var/www/dumps && \
