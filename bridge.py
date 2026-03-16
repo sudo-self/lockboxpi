@@ -87,14 +87,19 @@ def get_tunnel_url():
         logging.error(f"Failed to check tunnel status: {e}")
     return None
 
-@app.route('/tunnel/start', methods=['POST'])
-def start_tunnel():
+@app.route('/tunnel/toggle', methods=['POST'])
+def toggle_tunnel():
     try:
-        # Since cloudflared is installed as a systemd service, restarting it ensures it comes up fresh
-        subprocess.run(["sudo", "systemctl", "restart", "cloudflared"], check=True)
-        return jsonify(status="success", output="Cloudflare tunnel service restarted successfully.")
+        # Check if running to toggle it
+        result = subprocess.run(["systemctl", "is-active", "cloudflared"], capture_output=True, text=True)
+        if result.stdout.strip() == "active":
+            subprocess.run(["sudo", "systemctl", "stop", "cloudflared"], check=True)
+            return jsonify(status="success", output="Cloudflare tunnel STOPPED.")
+        else:
+            subprocess.run(["sudo", "systemctl", "start", "cloudflared"], check=True)
+            return jsonify(status="success", output="Cloudflare tunnel STARTED.")
     except Exception as e:
-        return jsonify(status="error", output=f"Failed to restart tunnel service: {str(e)}")
+        return jsonify(status="error", output=f"Failed to toggle tunnel service: {str(e)}")
 
 @app.route('/stats')
 def get_stats():

@@ -47,8 +47,8 @@ YML
 # Install and start the official cloudflared service
 cloudflared service install 2>/dev/null || true
 systemctl daemon-reload
-systemctl enable cloudflared
-systemctl restart cloudflared
+systemctl disable cloudflared
+systemctl stop cloudflared
 
-echo "Persistent Tunnel service installed!"
+echo "Persistent Tunnel service installed but disabled by default!"
 echo "Your Tectonic Utility is now permanently mapped to: https://$DOMAIN"
