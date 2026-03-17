@@ -4,7 +4,7 @@ PI_USER="lockboxpi"
 KEY="my_private_key"
 
 # Enable SSH Multiplexing to reuse the same connection
-SSH_OPTS="-i $KEY -o ControlMaster=auto -o ControlPath=/tmp/ssh-%r@%h:%p -o ControlPersist=10m -o StrictHostKeyChecking=accept-new"
+SSH_OPTS="-6 -i $KEY -o ControlMaster=auto -o ControlPath=/tmp/ssh-%r@%h:%p -o ControlPersist=10m -o StrictHostKeyChecking=accept-new"
 RSYNC_CMD="rsync -avz -e \"ssh $SSH_OPTS\""
 
 echo "Deploying to LockboxPi ($PI_IP)..."
