@@ -5,38 +5,39 @@ KEY="my_private_key"
 
 # Enable SSH Multiplexing to reuse the same connection
 SSH_OPTS="-i $KEY -o ControlMaster=auto -o ControlPath=/tmp/ssh-%r@%h:%p -o ControlPersist=10m -o StrictHostKeyChecking=accept-new"
+RSYNC_CMD="rsync -avz -e \"ssh $SSH_OPTS\""
 
 echo "Deploying to LockboxPi ($PI_IP)..."
 
 # 1. Push Core Files
-scp $SSH_OPTS index.html $PI_USER@$PI_IP:/var/www/index.html
-scp $SSH_OPTS bridge.py $PI_USER@$PI_IP:/var/www/bridge.py
+eval "$RSYNC_CMD index.html $PI_USER@$PI_IP:/var/www/index.html"
+eval "$RSYNC_CMD bridge.py $PI_USER@$PI_IP:/var/www/bridge.py"
 if [ -f "report_boot.py" ]; then
-    scp $SSH_OPTS report_boot.py $PI_USER@$PI_IP:/var/www/report_boot.py
+    eval "$RSYNC_CMD report_boot.py $PI_USER@$PI_IP:/var/www/report_boot.py"
 fi
 
 # 2. Push Dumps Folder
 if [ -d "dumps" ]; then
     echo "Syncing dumps repository..."
-    scp $SSH_OPTS -r dumps/* $PI_USER@$PI_IP:/var/www/dumps/
-    scp $SSH_OPTS dumps/icons/* $PI_USER@$PI_IP:/var/www/
+    eval "$RSYNC_CMD dumps/ $PI_USER@$PI_IP:/var/www/dumps/"
+    eval "$RSYNC_CMD dumps/icons/ $PI_USER@$PI_IP:/var/www/"
 fi
 
 # 3. Handle Header
 if [ -f "header.html" ]; then
-    scp $SSH_OPTS header.html $PI_USER@$PI_IP:/var/www/dumps/header.html
+    eval "$RSYNC_CMD header.html $PI_USER@$PI_IP:/var/www/dumps/header.html"
 fi
 
 # 4. Handle Apache Config and Cloudflare Tunnel
 if [ -f "dumps.conf" ]; then
-    scp $SSH_OPTS dumps.conf $PI_USER@$PI_IP:/home/lockboxpi/dumps.conf
+    eval "$RSYNC_CMD dumps.conf $PI_USER@$PI_IP:/home/lockboxpi/dumps.conf"
 fi
 if [ -f "setup_tunnel.sh" ]; then
-    scp $SSH_OPTS cert.pem fix_touch.sh $PI_USER@$PI_IP:/home/lockboxpi/
-    scp $SSH_OPTS setup_tunnel.sh $PI_USER@$PI_IP:/home/lockboxpi/setup_tunnel.sh
+    eval "$RSYNC_CMD cert.pem fix_touch.sh $PI_USER@$PI_IP:/home/lockboxpi/"
+    eval "$RSYNC_CMD setup_tunnel.sh $PI_USER@$PI_IP:/home/lockboxpi/setup_tunnel.sh"
 fi
 if [ -f "setup_ssl.sh" ]; then
-    scp $SSH_OPTS setup_ssl.sh $PI_USER@$PI_IP:/home/lockboxpi/setup_ssl.sh
+    eval "$RSYNC_CMD setup_ssl.sh $PI_USER@$PI_IP:/home/lockboxpi/setup_ssl.sh"
 fi
 
 # 5. Remote Commands with X11 Authority fix
