@@ -1,31 +1,152 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <iframe style="border:1px #FFFFFF none" src="https://bluebubbles.app/web/#/" title="iFrame" width="100%" height="600px" scrolling="no" frameborder="no" allow="fullscreen"></iframe>
+<title>Trixie Bot | Galvanized Control Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --iron-dark: #121417;
+    --iron-mid: #2a2e35;
+    --zinc-galvanized: #b1b9c3;
+    --zinc-bright: #e2e8f0;
+    --rivet-color: #3f444e;
+    --accent-caution: #f59e0b;
+    --accent-electric: #0ea5e9;
+    --danger-corrosion: #991b1b;
+    --terminal-glass: rgba(5, 10, 5, 0.95);
+    --phosphor: #34d399;
+}
+* { box-sizing: border-box; cursor: default; }
+body { margin: 0; background-color: var(--iron-dark); color: var(--zinc-galvanized); font-family: 'JetBrains Mono', monospace; height: 100vh; display: grid; grid-template-rows: auto 1fr; overflow: hidden; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"); background-blend-mode: overlay; }
+.structural-frame { position: absolute; inset: 0; pointer-events: none; border: 20px solid transparent; border-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100' height='100' fill='%232a2e35'/%3E%3Ccircle cx='10' cy='10' r='3' fill='%23121417'/%3E%3Ccircle cx='90' cy='10' r='3' fill='%23121417'/%3E%3Ccircle cx='10' cy='90' r='3' fill='%23121417'/%3E%3Ccircle cx='90' cy='90' r='3' fill='%23121417'/%3E%3C/svg%3E") 30 stretch; z-index: 100; }
+header { background: linear-gradient(180deg, var(--iron-mid) 0%, var(--iron-dark) 100%); padding: 1.5rem 3rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--rivet-color); position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.logo-area h1 { margin: 0; font-family: 'Oswald', sans-serif; text-transform: uppercase; font-size: 1.8rem; letter-spacing: 2px; color: var(--zinc-bright); display: flex; align-items: center; gap: 1rem; }
+.logo-area h1 span { font-size: 0.8rem; background: var(--accent-caution); color: var(--iron-dark); padding: 2px 8px; border-radius: 2px; }
+.status-badge { background: var(--iron-dark); border: 1px solid var(--rivet-color); padding: 0.5rem 1rem; font-size: 0.75rem; display: flex; align-items: center; gap: 10px; }
+.status-light { width: 8px; height: 8px; background: var(--phosphor); border-radius: 50%; box-shadow: 0 0 10px var(--phosphor); animation: blink 2s infinite; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+main { display: grid; grid-template-columns: 350px 1fr; gap: 0; overflow: hidden; position: relative; }
+.sidebar { background: var(--iron-mid); border-right: 8px solid var(--rivet-color); padding: 2rem; overflow-y: auto; position: relative; box-shadow: inset -10px 0 20px rgba(0,0,0,0.3); }
+.group-label { font-family: 'Oswald', sans-serif; text-transform: uppercase; font-size: 0.85rem; color: var(--accent-caution); margin: 1.5rem 0 0.75rem 0; display: flex; align-items: center; gap: 8px; }
+.group-label::after { content: ''; flex-grow: 1; height: 1px; background: var(--rivet-color); }
+.btn { width: 100%; padding: 0.8rem 1rem; margin-bottom: 0.6rem; background: linear-gradient(145deg, #323740, #262a31); border: 1px solid var(--rivet-color); color: var(--zinc-galvanized); text-align: left; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; }
+.btn:hover { background: var(--zinc-galvanized); color: var(--iron-dark); transform: translateX(4px); }
+.btn:active { transform: translateX(2px) translateY(1px); box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5); }
+.btn.danger { border-left: 4px solid var(--danger-corrosion); }
+.btn.danger:hover { background: var(--danger-corrosion); color: white; }
+.console-deck { padding: 2.5rem; display: flex; flex-direction: column; background: radial-gradient(circle at center, #1e2227 0%, var(--iron-dark) 100%); }
+.terminal-mount { flex-grow: 1; background: var(--terminal-glass); border: 12px solid var(--rivet-color); border-radius: 4px; position: relative; box-shadow: inset 0 0 50px rgba(0,0,0,1),0 0 20px rgba(0,0,0,0.5); padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
+.terminal-mount::before { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); background-size: 100% 4px, 3px 100%; pointer-events: none; z-index: 10; }
+#output { color: var(--phosphor); font-size: 0.95rem; line-height: 1.5; text-shadow: 0 0 5px var(--phosphor); white-space: pre-wrap; }
+.input-bay { margin-top: 1.5rem; display: flex; gap: 10px; background: var(--iron-mid); padding: 8px; border: 2px solid var(--rivet-color); }
+input { flex-grow: 1; background: transparent; border: none; padding: 1rem; color: var(--zinc-bright); font-family: 'JetBrains Mono', monospace; outline: none; font-size: 1rem; }
+.run-btn { background: var(--accent-caution); color: var(--iron-dark); border: none; padding: 0 2rem; font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
+.run-btn:hover { background: var(--zinc-bright); }
+.rivet { position: absolute; width: 8px; height: 8px; background: var(--iron-dark); border-radius: 50%; box-shadow: inset 1px 1px 2px rgba(255,255,255,0.1); }
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--iron-dark); }
+::-webkit-scrollbar-thumb { background: var(--rivet-color); }
+</style>
+</head>
+<body>
+<div class="structural-frame"></div>
+
+<header>
+<div class="logo-area">
+<h1>TRIXIE_SYSTEM <span>V1.0.0-GALVANIZED</span></h1>
+</div>
+<div class="status-badge">
+<div class="status-light"></div>
+<span id="status-text">LBPI.JESSEJESSE.COM // LINK_STABLE // UID:7251722622</span>
+</div>
+</header>
+
+<main>
+<aside class="sidebar">
+<div class="group-label">Core Diagnostics</div>
+<button class="btn" onclick="exec('lsusb')">lsusb --tree</button>
+<button class="btn" onclick="exec('whoami')">identity</button>
+<button class="btn" onclick="exec('ip addr')">network_map</button>
+<button class="btn" onclick="exec('df -h')">storage_util</button>
+
+<div class="group-label">MTK Client</div>
+<button class="btn" onclick="exec('mtk test')">mtk test</button>
+
+<div class="group-label">LockKnife</div>
+<button class="btn" onclick="exec('knife pull-pattern')">pull-pattern</button>
+<button class="btn" onclick="exec('knife dump-system')">dump-system</button>
+
+<div class="group-label">Structural Utility</div>
+<button class="btn" onclick="exec('uptime')">uptime</button>
+<button class="btn danger" onclick="exec('reboot')">thermal_reboot</button>
+</aside>
+
+<section class="console-deck">
+<div class="terminal-mount" id="term-container">
+<div id="output">Trixie Bot Galvanized UI [Version 1.0.0]
+(c) 2024 Ferro-Structural Corp. All rights reserved.
+
+[SYSTEM]: Ready for structural input...
+[AUTH]: User 7251722622 verified on secure channel.</div>
+</div>
+<div class="input-bay">
+<input type="text" id="cmdInput" placeholder="Enter structural command..." autocomplete="off">
+<button class="run-btn" onclick="submit()">Execute</button>
+</div>
+</section>
+</main>
+
+<script>
+const output = document.getElementById('output');
+const input = document.getElementById('cmdInput');
+const container = document.getElementById('term-container');
+
+function log(text, type='info') {
+    const time = new Date().toLocaleTimeString('en-GB',{hour12:false});
+    const prefix = type==='cmd' ? `\n>_ ` : `\n[${time}] `;
+    output.innerText += prefix + text;
+    container.scrollTop = container.scrollHeight;
+}
+
+function exec(command) {
+    log(`INVOKING: ${command}`, 'cmd');
+    fetch('http://lockboxpi.local/terminal/run', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({command})
+    }).then(res => res.json())
+      .then(data => {
+          if(data.status==='success'){
+              log(data.output,'info');
+          } else {
+              log(`ERROR: ${data.output}`,'info');
+          }
+      }).catch(err=>log(`NETWORK ERROR: ${err}`,'info'));
+}
+
+function submit() {
+    const val = input.value.trim();
+    if(val){ exec(val); input.value=''; }
+}
+
+input.addEventListener("keypress",(e)=>{if(e.key==='Enter')submit();});
+
+// Fetch stats every 10 seconds
+function updateStats() {
+    fetch('http://lockboxpi.local/stats')
+        .then(res=>res.json())
+        .then(stats=>{
+            log(`[STATS] CPU: ${stats.cpu_temp} | Free: ${stats.storage_free} | Uptime: ${stats.uptime} | MTK: ${stats.mtk_status}`,'info');
+        }).catch(err=>log(`[STATS ERROR] ${err}`));
+}
+setInterval(updateStats,10000);
+updateStats();
+
+window.onload = () => { document.body.style.opacity='0'; setTimeout(()=>{ document.body.style.transition='opacity 1s ease-out'; document.body.style.opacity='1';},100); }
+</script>
 </body>
 </html>
-
-
-{
-  "name": "telegram",
-  "commands": [
-    {
-      "command": "start",
-      "description": "Start the bot"
-    },
-    {
-      "command": "gui",
-      "description": "opens https://lbpi.jessejesse.com"
-    },
-    {
-      "command": "apk",
-      "description": "lbpi.jessejesse.com/dumps/DroidCommander.apk"
-    },
-    {
-      "command": "lan",
-      "description": "Displays lan ip"
-    }
-  ]
-}
