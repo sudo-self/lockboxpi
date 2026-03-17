@@ -209,8 +209,8 @@
                 <span>TERM</span>
             </div>
             <div class="nav-item" onclick="toggleTunnel()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px; color: var(--cf-orange);"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
-                <span>TUNNEL</span>
+                <svg id="tunnelIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px; color: var(--text-dim); transition: color 0.3s;"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+                <span id="tunnelText" style="transition: color 0.3s;">TUNNEL</span>
             </div>
         </nav>
 
@@ -403,13 +403,19 @@
                 
                 const brandWrapper = document.querySelector('.brand');
                 const brandEl = document.getElementById('brand-text');
+                const tunnelIcon = document.getElementById('tunnelIcon');
+                const tunnelText = document.getElementById('tunnelText');
                 // Tunnel up = WAN (orange, clickable), Tunnel down = LAN (green)
                 if (data.tunnel_url) {
                     brandEl.innerHTML = `<a href="https://lbpi.jessejesse.com" target="_blank">WAN</a>`;
                     brandWrapper.style.color = 'var(--cf-orange)';
+                    if (tunnelIcon) tunnelIcon.style.color = 'var(--cf-orange)';
+                    if (tunnelText) { tunnelText.textContent = 'TUN ON'; tunnelText.style.color = 'var(--cf-orange)'; }
                 } else {
                     brandEl.textContent = 'LAN';
                     brandWrapper.style.color = 'var(--safe-core)';
+                    if (tunnelIcon) tunnelIcon.style.color = 'var(--text-dim)';
+                    if (tunnelText) { tunnelText.textContent = 'TUN OFF'; tunnelText.style.color = 'var(--text-dim)'; }
                 }
 
                 document.getElementById('val-temp').textContent = data.cpu_temp;
