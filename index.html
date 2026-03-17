@@ -415,6 +415,27 @@
                 document.getElementById('val-temp').textContent = data.cpu_temp;
                 document.getElementById('val-storage').textContent = data.storage_free;
                 document.getElementById('val-uptime').textContent = data.uptime;
+                
+                const mtkEl = document.getElementById('mtkStatus');
+                if (mtkEl) {
+                    mtkEl.textContent = data.mtk_status;
+                    if (data.mtk_status === 'CONNECTED') {
+                        mtkEl.style.color = 'var(--safe-core)';
+                    } else {
+                        mtkEl.style.color = 'var(--accent-core)';
+                    }
+                }
+
+                const lkEl = document.getElementById('lkStatus');
+                if (lkEl) {
+                    if (data.device && data.device !== 'NONE') {
+                        lkEl.textContent = "DEVICE: " + data.device;
+                        lkEl.style.color = 'var(--safe-core)';
+                    } else {
+                        lkEl.textContent = 'READY';
+                        lkEl.style.color = 'var(--accent-core)';
+                    }
+                }
             }).catch(err => {
                 console.error("Stats check offline", err);
                 document.getElementById('connStatus').classList.remove('active');

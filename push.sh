@@ -67,5 +67,5 @@ echo "Deployment complete! Screen hard-refreshed."
 # 6. Git commit and push local repo
 echo "Committing and pushing local changes to git..."
 git add .
-git commit -m \"Auto-deploy update via push.sh\"
+git commit -m "Auto-deploy update via push.sh"
 git push
