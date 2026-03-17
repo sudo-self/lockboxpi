@@ -6,3 +6,11 @@ dumps/*.mp4
 dumps/*.mov
 dumps/*.pdf
 dumps/my_private_key
+my_private_key
+*.sh
+!push.sh
+!fix_touch.sh
+!setup_ssl.sh
+!setup_tunnel.sh
+!setup_bluetooth.sh
+!connect.sh
