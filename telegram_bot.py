@@ -270,11 +270,12 @@ def handle_samsung_callbacks(call):
     elif call.data == "sam_plugged":
         markup = InlineKeyboardMarkup()
         markup.add(
-            InlineKeyboardButton("1. open in chrome", callback_data="sam_chrome"),
+            InlineKeyboardButton("I am using Chrome", callback_data="sam_chrome"),
             InlineKeyboardButton("2. cancel", callback_data="sam_cancel")
         )
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, 
-                              text="once device is connected open https://lbpi.jessejesse.com/dumps/frp.html", reply_markup=markup)
+                              text="once device is connected open https://lbpi.jessejesse.com/dumps/frp.html\n\n⚠️ **STOP! must be chrome browser!**", 
+                              reply_markup=markup, parse_mode="Markdown")
 
     elif call.data == "sam_chrome":
         markup = InlineKeyboardMarkup()
