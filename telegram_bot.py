@@ -76,38 +76,38 @@ def send_chunks(chat_id, text):
 def send_welcome(message):
     help_text = (
         " 📎*Upload Files:* Send any file to this chat to upload it.\n\n"
-        "/commands - Lists commands\n"
-        "/lsusb - Lists connected USB devices\n"
-        "/whoami - Shows current user info\n"
         "/adb - Checks ADB connection status\n"
-        "/adb_devices - Lists connected ADB devices\n"
         "/adb_bootloader - Reboots device to bootloader\n"
-        "/ip_addr - Displays IP address\n"
+        "/adb_devices - Lists connected ADB devices\n"
+        "/commands - Lists commands\n"
         "/disk_free - Shows free disk space\n"
-        "/mtk_help - Shows MTK Client help\n"
-        "/mtk_gpt - Dumps MTK GPT partition table\n"
-        "/mtk_gettargetconfig - Gets MTK target config\n"
-        "/mtk_frp - Manages MTK FRP operations\n"
-        "/mtk_unlock - Unlocks MTK device via seccfg\n"
-        "/mtk_e_frp - Erases MTK FRP partition\n"
-        "/knife_key - Extracts keys via Knife\n"
+        "/dropzone - display dropzone"
+        "/figlet - Prints text in ASCII art\n"
+        "/install_apk - Installs an APK\n"
+        "/invite - Generates a one-time invite link\n"
+        "/ip_addr - Displays IP address\n"
+        "/kick - Kicks a user from the group\n"
         "/knife_dumpr - Dumps partitions via Knife\n"
+        "/knife_key - Extracts keys via Knife\n"
         "/list_dumps - Lists files in dumps folder\n"
+        "/lockboxpi - Shows system info via fastfetch\n"
+        "/lsusb - Lists connected USB devices\n"
+        "/mtk_e_frp - Erases MTK FRP partition\n"
+        "/mtk_frp - Manages MTK FRP operations\n"
+        "/mtk_gettargetconfig - Gets MTK target config\n"
+        "/mtk_gpt - Dumps MTK GPT partition table\n"
+        "/mtk_help - Shows MTK Client help\n"
+        "/mtk_unlock - Unlocks MTK device via seccfg\n"
+        "/re_bridge - Restarts bridge connection\n"
+        "/reboot - Reboots the device\n"
+        "/samsung - Interactive Samsung FRP flow\n"
         "/send_file - Sends a file from dumps\n"
         "/sys_log - Shows the system log\n"
-        "/x - Shows Twitter handle\n"
-        "/reboot - Reboots the device\n"
         "/terminal - Runs a shell command\n"
-        "/touch_rotate - Rotates touch orientation\n"
         "/touch_calib - Calibrates the touchscreen\n"
-        "/re_bridge - Restarts bridge connection\n"
-        "/install_apk - Installs an APK\n"
-        "/samsung - Interactive Samsung FRP flow\n"
-        "/kick - Kicks a user from the group\n"
-        "/invite - Generates a one-time invite link\n"
-        "/figlet - Prints text in ASCII art\n"
-        "/lockboxpi - Shows system info via fastfetch\n"
-        "/dropzone - display dropzone"
+        "/touch_rotate - Rotates touch orientation\n"
+        "/whoami - Shows current user info\n"
+        "/x - Shows Twitter handle\n"
     )
     bot.reply_to(message, help_text, parse_mode="Markdown")
 
@@ -422,32 +422,32 @@ def handle_samsung_callbacks(call):
 if __name__ == '__main__':
     from telebot.types import BotCommand
     commands = [
-        BotCommand("start", "Show help message"),
-        BotCommand("help", "Show help message"),
-        BotCommand("lsusb", "List USB devices"),
-        BotCommand("whoami", "Show current user info"),
         BotCommand("adb", "Checks ADB connection status"),
-        BotCommand("ip_addr", "Displays IP address"),
         BotCommand("disk_free", "Shows free disk space"),
-        BotCommand("mtk_gpt", "Dumps MTK GPT partition table"),
-        BotCommand("mtk_frp", "Manages MTK FRP operations"),
-        BotCommand("knife_key", "Extracts keys via Knife"),
-        BotCommand("knife_dumpr", "Dumps partitions via Knife"),
-        BotCommand("list_dumps", "Lists files in dumps folder"),
-        BotCommand("send_file", "Sends a file from dumps"),
-        BotCommand("sys_log", "Shows the system log"),
-        BotCommand("reboot", "Reboots the device"),
-        BotCommand("terminal", "Runs a shell command"),
-        BotCommand("touch_rotate", "Rotates touch orientation"),
-        BotCommand("touch_calib", "Calibrates the touchscreen"),
-        BotCommand("re_bridge", "Restarts bridge connection"),
-        BotCommand("install_apk", "Installs an APK"),
-        BotCommand("samsung", "Interactive Samsung FRP flow"),
-        BotCommand("kick", "Kicks a user from the group"),
-        BotCommand("invite", "Generates a one-time invite link"),
+        BotCommand("dropzone", "display dropzone"),
         BotCommand("figlet", "Prints text in ASCII art"),
+        BotCommand("help", "Show help message"),
+        BotCommand("install_apk", "Installs an APK"),
+        BotCommand("invite", "Generates a one-time invite link"),
+        BotCommand("ip_addr", "Displays IP address"),
+        BotCommand("kick", "Kicks a user from the group"),
+        BotCommand("knife_dumpr", "Dumps partitions via Knife"),
+        BotCommand("knife_key", "Extracts keys via Knife"),
+        BotCommand("list_dumps", "Lists files in dumps folder"),
         BotCommand("lockboxpi", "Shows system info via fastfetch"),
-        BotCommand("dropzone", "display dropzone")
+        BotCommand("lsusb", "List USB devices"),
+        BotCommand("mtk_frp", "Manages MTK FRP operations"),
+        BotCommand("mtk_gpt", "Dumps MTK GPT partition table"),
+        BotCommand("re_bridge", "Restarts bridge connection"),
+        BotCommand("reboot", "Reboots the device"),
+        BotCommand("samsung", "Interactive Samsung FRP flow"),
+        BotCommand("send_file", "Sends a file from dumps"),
+        BotCommand("start", "Show help message"),
+        BotCommand("sys_log", "Shows the system log"),
+        BotCommand("terminal", "Runs a shell command"),
+        BotCommand("touch_calib", "Calibrates the touchscreen"),
+        BotCommand("touch_rotate", "Rotates touch orientation"),
+        BotCommand("whoami", "Show current user info"),
     ]
     try:
         bot.set_my_commands(commands)
