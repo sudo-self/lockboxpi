@@ -65,52 +65,53 @@ def send_chunks(chat_id, text):
 @bot.message_handler(commands=['start', 'help', 'commands'])
 def send_welcome(message):
     help_text = (
-        "💡 *Upload Files:* Send any file, photo, or video to this chat to upload it to the dumps folder.\n\n"
-        "commands - Lists commands\n"
-        "lsusb - Lists connected USB devices\n"
-        "whoami - Shows current user info\n"
-        "adb - Checks ADB connection status\n"
-        "adb_devices - Lists connected ADB devices\n"
-        "adb_bootloader - Reboots device to bootloader\n"
-        "ip_addr - Displays IP address\n"
-        "disk_free - Shows free disk space\n"
-        "mtk_help - Shows MTK Client help\n"
-        "mtk_gpt - Dumps MTK GPT partition table\n"
-        "mtk_gettargetconfig - Gets MTK target config\n"
-        "mtk_frp - Manages MTK FRP operations\n"
-        "mtk_unlock - Unlocks MTK device via seccfg\n"
-        "mtk_e_frp - Erases MTK FRP partition\n"
-        "knife_key - Extracts keys via Knife\n"
-        "knife_dumpr - Dumps partitions via Knife\n"
-        "list_dumps - Lists files in dumps folder\n"
-        "send_file - Sends a file from dumps\n"
-        "sys_log - Shows the system log\n"
-        "reboot - Reboots the device\n"
-        "terminal - Runs a shell command\n"
-        "touch_rotate - Rotates touch orientation\n"
-        "touch_calib - Calibrates the touchscreen\n"
-        "re_bridge - Restarts bridge connection\n"
-        "install_apk - Installs an APK\n"
-        "samsung - Interactive Samsung FRP flow"
+        " 📎*Upload Files:* Send any file to this chat to upload it.\n\n"
+        "/commands - Lists commands\n"
+        "/lsusb - Lists connected USB devices\n"
+        "/whoami - Shows current user info\n"
+        "/adb - Checks ADB connection status\n"
+        "/adb_devices - Lists connected ADB devices\n"
+        "/adb_bootloader - Reboots device to bootloader\n"
+        "/ip_addr - Displays IP address\n"
+        "/disk_free - Shows free disk space\n"
+        "/mtk_help - Shows MTK Client help\n"
+        "/mtk_gpt - Dumps MTK GPT partition table\n"
+        "/mtk_gettargetconfig - Gets MTK target config\n"
+        "/mtk_frp - Manages MTK FRP operations\n"
+        "/mtk_unlock - Unlocks MTK device via seccfg\n"
+        "/mtk_e_frp - Erases MTK FRP partition\n"
+        "/knife_key - Extracts keys via Knife\n"
+        "/knife_dumpr - Dumps partitions via Knife\n"
+        "/list_dumps - Lists files in dumps folder\n"
+        "/send_file - Sends a file from dumps\n"
+        "/sys_log - Shows the system log\n"
+        "/x - Shows Twitter handle\n"
+        "/reboot - Reboots the device\n"
+        "/terminal - Runs a shell command\n"
+        "/touch_rotate - Rotates touch orientation\n"
+        "/touch_calib - Calibrates the touchscreen\n"
+        "/re_bridge - Restarts bridge connection\n"
+        "/install_apk - Installs an APK\n"
+        "/samsung - Interactive Samsung FRP flow"
     )
     bot.reply_to(message, help_text, parse_mode="Markdown")
 
 # --- File Management ---
-@bot.message_handler(commands=['list_dumps'])
+@bot.message_handler(commands=['list_dumps', 'listdumps'])
 @secure
-def handle_list_dumps(message):
+def handle_listdumps(message):
     if not os.path.exists(DUMPS_DIR):
         bot.reply_to(message, f"Directory {DUMPS_DIR} does not exist.")
         return
-    files = "\n".join(os.listdir(DUMPS_DIR))
+    files = "\n".join([f for f in os.listdir(DUMPS_DIR) if not f.startswith('.')])
     bot.reply_to(message, f"Files in dumps:\n```{files if files else 'Directory is empty'}```", parse_mode="Markdown")
 
-@bot.message_handler(commands=['send_file'])
+@bot.message_handler(commands=['send_file', 'sendfile'])
 @secure
-def handle_send_file(message):
+def handle_sendfile(message):
     parts = message.text.split(maxsplit=1)
     if len(parts) < 2:
-        bot.reply_to(message, "Usage: /send_file <filename>")
+        bot.reply_to(message, "Usage: /sendfile <filename>")
         return
     filename = os.path.basename(parts[1])  # sanitize input
     file_path = os.path.join(DUMPS_DIR, filename)
@@ -162,10 +163,16 @@ BASIC_CMDS = {
     'whoami': 'whoami',
     'adb': 'adb devices',
     'adb_devices': 'adb devices',
+    'adbdevices': 'adb devices',
     'adb_bootloader': 'adb reboot bootloader',
+    'adbbootloader': 'adb reboot bootloader',
     'ip_addr': 'hostname -I',
+    'ipaddr': 'hostname -I',
     'disk_free': 'df -h',
-    'sys_log': 'dmesg | tail -n 30'
+    'diskfree': 'df -h',
+    'sys_log': 'dmesg | tail -n 30',
+    'syslog': 'dmesg | tail -n 30',
+    'x': 'echo "@lightfighter719"'
 }
 
 for cmd_name, cmd_exec in BASIC_CMDS.items():
@@ -178,13 +185,21 @@ for cmd_name, cmd_exec in BASIC_CMDS.items():
 # --- Tools ---
 TOOLS = {
     'mtk_gpt': '/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py printgpt',
+    'mtkgpt': '/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py printgpt',
     'mtk_frp': '/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py e frp',
+    'mtkfrp': '/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py e frp',
     'mtk_help': '/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py -h',
+    'mtkhelp': '/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py -h',
     'mtk_gettargetconfig': '/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py gettargetconfig',
+    'mtkgettargetconfig': '/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py gettargetconfig',
     'mtk_unlock': '/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py da seccfg unlock',
+    'mtkunlock': '/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py da seccfg unlock',
     'mtk_e_frp': '/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py e frp',
+    'mtkefrp': '/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py e frp',
     'knife_key': 'bash /home/lockboxpi/LockKnife/LockKnife.sh --debug',
-    'knife_dumpr': 'bash /home/lockboxpi/LockKnife/LockKnife.sh'
+    'knifekey': 'bash /home/lockboxpi/LockKnife/LockKnife.sh --debug',
+    'knife_dumpr': 'bash /home/lockboxpi/LockKnife/LockKnife.sh',
+    'knifedumpr': 'bash /home/lockboxpi/LockKnife/LockKnife.sh'
 }
 
 for tool_name, tool_cmd in TOOLS.items():
@@ -198,8 +213,11 @@ for tool_name, tool_cmd in TOOLS.items():
 # --- Misc ---
 MISC_CMDS = {
     'touch_rotate': 'bash /home/lockboxpi/LCD-show/rotate.sh 90',
+    'touchrotate': 'bash /home/lockboxpi/LCD-show/rotate.sh 90',
     'touch_calib': 'DISPLAY=:0 xinput_calibrator',
-    're_bridge': 'sudo systemctl restart lockbox-bridge.service'
+    'touchcalib': 'DISPLAY=:0 xinput_calibrator',
+    're_bridge': 'sudo systemctl restart lockbox-bridge.service',
+    'rebridge': 'sudo systemctl restart lockbox-bridge.service'
 }
 
 for misc_name, misc_cmd in MISC_CMDS.items():
@@ -221,16 +239,16 @@ def handle_terminal(message):
         bot.reply_to(message, "Usage: /terminal <command>")
 
 # --- Install APK ---
-@bot.message_handler(commands=['install_apk'])
+@bot.message_handler(commands=['install_apk', 'installapk'])
 @secure
-def handle_install_apk(message):
+def handle_installapk(message):
     parts = message.text.split(maxsplit=1)
     if len(parts) > 1:
         cmd = f'adb install "{parts[1]}"'
         logging.info(f"{message.from_user.id} installing APK: {parts[1]}")
         send_chunks(message.chat.id, run_command(cmd, shell=True))
     else:
-        bot.reply_to(message, "Usage: /install_apk <path_to_apk>")
+        bot.reply_to(message, "Usage: /installapk <path_to_apk>")
 
 # --- Reboot with confirmation ---
 @bot.message_handler(commands=['reboot'])
