@@ -14,7 +14,7 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 MTK_PYTHON = "/home/lockboxpi/mtk_env/bin/python3"
 MTK_SCRIPT = "/home/lockboxpi/mtkclient/mtk.py"
 KNIFE_SCRIPT = "/home/lockboxpi/LockKnife/LockKnife.sh"
-DUMPS_DIR = "/var/www/dumps"
+DUMPS_DIR = "/home/lockboxpi/dumps"
 WIFI_DB = "/var/lib/dietpi/dietpi-wifi.db"
 
 def get_storage_free():
@@ -253,7 +253,7 @@ if __name__ == '__main__':
     
     # Trigger boot report to Google Doc in the background
     try:
-        subprocess.Popen(["python3", "/var/www/report_boot.py"], start_new_session=True)
+        subprocess.Popen(["python3", "/home/lockboxpi/report_boot.py"], start_new_session=True)
     except Exception as e:
         logging.error(f"Failed to trigger boot report: {e}")
     

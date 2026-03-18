@@ -14,3 +14,18 @@ my_private_key
 !setup_tunnel.sh
 !setup_bluetooth.sh
 !connect.sh
+
+# Added to protect local workspace environments
+.*
+!.gitignore
+LCD-show/
+LockKnife/
+mtkclient/
+mtk_env/
+tgbot_env/
+lockknife_output/
+bot.log
+bot.txt
+__pycache__/
+*.pyc
+dumps/lockboxpi.apk

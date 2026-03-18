@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pi SSD + SD Partition Layout</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background: #f7f7f7;
+    color: #333;
+  }
+  h1 { text-align: center; }
+  .disk {
+    border: 2px solid #444;
+    border-radius: 8px;
+    padding: 10px;
+    margin: 20px auto;
+    max-width: 600px;
+    background: #fff;
+  }
+  .partition {
+    border: 1px solid #888;
+    border-radius: 4px;
+    margin: 5px 0;
+    padding: 5px 10px;
+    background: linear-gradient(to right, #4caf50, #81c784);
+    color: #fff;
+  }
+  .partition.empty {
+    background: linear-gradient(to right, #ccc, #eee);
+    color: #555;
+  }
+  .partition .label {
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<h1>Raspberry Pi SSD + SD Partition Layout</h1>
+
+<div class="disk">
+  <h2>500GB SSD (sda)</h2>
+  <div class="partition">
+    <span class="label">sda1:</span> 128MB — /boot/firmware (FAT32, boot)
+  </div>
+  <div class="partition">
+    <span class="label">sda2:</span> 229GB — / (DietPi root)
+  </div>
+  <div class="partition empty">
+    <span class="label">sda3:</span> ~250GB — /mnt/data (ext4, ready for future OS or storage)
+  </div>
+</div>
+
+<div class="disk">
+  <h2>SD Card (optional BerryBoot)</h2>
+  <div class="partition">
+    <span class="label">FAT32:</span> BerryBoot files — boot menu / installer
+  </div>
+</div>
+
+<p style="text-align:center; font-style:italic;">
+SSD-first boot from sda2 (DietPi), SD card optional for multiboot/installer.
+</p>
+
+</body>
+</html>
+
+

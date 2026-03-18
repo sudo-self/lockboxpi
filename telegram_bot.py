@@ -7,7 +7,7 @@ import logging
 # --- Configuration ---
 TOKEN = '8698638609:AAEaE1oKl1307vB11rOK_RoDniiAm2BeELY'
 ALLOWED_USERS = [7251722622]
-DUMPS_DIR = '/dumps'
+DUMPS_DIR = '/home/lockboxpi/dumps'
 OUTPUT_LIMIT = 3500  # characters for stdout
 ERROR_LIMIT = 500    # characters for stderr
 TIMEOUT = 120        # seconds
@@ -68,8 +68,8 @@ def send_welcome(message):
         "/lsusb, /whoami, /adb, /ip_addr, /disk_free\n"
         "/mtk_gpt, /mtk_frp\n"
         "/knife_key, /knife_dumpr\n"
-        "/list_dumps - List files in /dumps\n"
-        "/send_file <filename> - Send file from /dumps\n"
+        "/list_dumps - List files in dumps\n"
+        "/send_file <filename> - Send file from dumps\n"
         "/sys_log, /reboot, /terminal <cmd>\n"
         "/touch_rotate, /touch_calib, /re_bridge, /install_apk"
     )
@@ -83,7 +83,7 @@ def handle_list_dumps(message):
         bot.reply_to(message, f"Directory {DUMPS_DIR} does not exist.")
         return
     files = "\n".join(os.listdir(DUMPS_DIR))
-    bot.reply_to(message, f"Files in /dumps:\n```{files if files else 'Directory is empty'}```", parse_mode="Markdown")
+    bot.reply_to(message, f"Files in dumps:\n```{files if files else 'Directory is empty'}```", parse_mode="Markdown")
 
 @bot.message_handler(commands=['send_file'])
 @secure
@@ -101,7 +101,7 @@ def handle_send_file(message):
         except Exception as e:
             bot.reply_to(message, f"Error sending file: {e}")
     else:
-        bot.reply_to(message, "File not found in /dumps.")
+        bot.reply_to(message, "File not found in dumps.")
 
 # --- Basic & System Commands ---
 BASIC_CMDS = {
@@ -140,7 +140,7 @@ for tool_name, tool_cmd in TOOLS.items():
 MISC_CMDS = {
     'touch_rotate': 'bash /home/lockboxpi/LCD-show/rotate.sh 90',
     'touch_calib': 'DISPLAY=:0 xinput_calibrator',
-    're_bridge': 'pkill -f bridge.py; nohup python3 /home/lockboxpi/bridge.py > /dev/null 2>&1 &'
+    're_bridge': 'sudo systemctl restart lockbox-bridge.service'
 }
 
 for misc_name, misc_cmd in MISC_CMDS.items():
