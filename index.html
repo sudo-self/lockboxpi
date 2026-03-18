@@ -62,7 +62,7 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             cursor: pointer; box-shadow: var(--bevel-outer); transition: 0.1s;
         }
-        .nav-item.active { box-shadow: var(--bevel-inner); background: var(--base-crust); }
+        .nav-item.active { box-shadow: var(--bevel-inner); background-color: var(--base-crust); border: 1px solid rgba(255, 157, 0, 0.6); }
         .nav-item svg { width: 30px; fill: var(--text-dim); margin-bottom: 2px; }
         .nav-item.active svg { fill: var(--accent-core); filter: drop-shadow(0 0 5px var(--accent-glow)); }
         .nav-item.active .nav-icon-img { filter: drop-shadow(0 0 5px var(--accent-glow)) !important; opacity: 1; }
@@ -192,9 +192,7 @@
         </header>
 
         <nav>
-            <div class="nav-item active" onclick="switchTab('adb', this)">
-                <svg viewBox="0 0 24 24"><path d="M7 17h10v-2h-1v-3c0-2.21-1.79-4-4-4s-4 1.79-4 4v3H7v2zm5-11c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>
-                <span>ADB</span>
+            <div class="nav-item active" onclick="switchTab('adb', this)" style="background: url('/dumps/photo_AgACAgEAAxkBAAICZmm6Xb_yz6u-lLdSF7euvV4ij0KEAAI2DGsbf1_QRWXPkBzrfeSRAQADAgADeAADOgQ.jpg'); background-size: cover; background-position: center; border: none !important;">
             </div>
             <div class="nav-item" onclick="switchTab('mtk', this)">
                 <svg viewBox="0 0 24 24"><path d="M13 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V9l-7-7z"/></svg>
@@ -204,13 +202,13 @@
                 <svg viewBox="0 0 24 24"><path d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.16.09-.36.14-.57.14s-.41-.05-.57-.14l-7.9-4.44c-.31-.17-.53-.5-.53-.88V7.5c0-.38.21-.71.53-.88l7.9-4.44c.16-.09.36-.14.57-.14s.41.05.57.14l7.9 4.44c.31.17.53.5.53.88v9z"/></svg>
                 <span>KNIFE</span>
             </div>
+            <div class="nav-item" onclick="switchTab('samsung', this)">
+                <svg viewBox="0 0 24 24"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
+                <span>SAMSUNG</span>
+            </div>
             <div class="nav-item" onclick="switchTab('term', this)">
                 <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.1.89 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.11-.89-2-2-2z"/></svg>
                 <span>TERM</span>
-            </div>
-            <div class="nav-item" onclick="toggleTunnel()">
-                <svg id="tunnelIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px; color: var(--text-dim); transition: color 0.3s;"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
-                <span id="tunnelText" style="transition: color 0.3s;">TUNNEL</span>
             </div>
         </nav>
 
@@ -266,6 +264,10 @@
                     <a href="https://t.me/lockboxtrixie_bot" target="_blank" class="github-link-btn" style="flex: 1; justify-content: center; align-items: center;">
                         <img src="/dumps/darthberrypibot.png" style="width: 16px; height: 16px; border-radius: 50%;" alt="Telegram">
                     </a>
+                    <div onclick="toggleTunnel()" class="github-link-btn" style="flex: 1; justify-content: center; align-items: center; cursor: pointer;">
+                        <svg id="tunnelIcon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; fill: none !important; color: var(--text-dim); transition: color 0.3s;"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+                        <span id="tunnelText" style="display: none;"></span>
+                    </div>
                 </div>
             </div>
 
@@ -281,12 +283,24 @@
             <div id="knife" class="tab-panel">
                 <div class="tectonic-card">
                     <div class="data-label" style="font-size:13px">FORENSIC MODULES</div>
-                    <div id="lkStatus" class="data-value accent" style="margin:20px 0; font-size:20px;">READY</div>
-                    <div style="display:flex; gap:15px;">
-                        <button class="btn-action" style="height:54px; padding:0 20px" onclick="runLk('pull-pattern')">PULL KEY</button>
-                        <button class="btn-action" style="height:54px; padding:0 20px" onclick="runLk('dump-system')">DUMP SYS</button>
+                    <div id="lkStatus" class="data-value accent" style="margin:10px 0; font-size:20px;">READY</div>
+                    <div style="display:flex; gap:15px; margin-bottom: 15px; width: 80%;">
+                        <button class="btn-action" style="height:45px; padding:0 20px; flex: 1" onclick="runLk('pull-pattern')">PULL KEY</button>
+                        <button class="btn-action" style="height:45px; padding:0 20px; flex: 1" onclick="runLk('dump-system')">DUMP SYS</button>
                     </div>
                     <div class="helper-text">Ensure ADB is authorized on target device</div>
+                </div>
+            </div>
+
+            <div id="samsung" class="tab-panel">
+                <div class="tectonic-card">
+                    <div class="data-label" style="font-size:13px">SAMSUNG FRP MODULE</div>
+                    <div id="samStatus" class="data-value accent" style="margin:10px 0; font-size:20px;">DISCONNECTED</div>
+                    <div style="display:flex; gap:15px; margin-bottom: 15px; width: 90%;">
+                        <button class="btn-action" style="height:45px; padding:0 10px; flex: 1" onclick="runObsidian()">AUTO_BYPASS</button>
+                        <button class="btn-action" style="height:45px; padding:0 10px; flex: 1" onclick="window.open('./dumps/frp.html', '_blank')">INTERACTIVE</button>
+                    </div>
+                    <div class="helper-text">Works via Serial AT Commands and ADB</div>
                 </div>
             </div>
 
@@ -450,12 +464,22 @@
                         lkEl.style.color = 'var(--accent-core)';
                     }
                 }
+
+                const samEl = document.getElementById('samStatus');
+                if (samEl) {
+                    samEl.textContent = data.serial_status;
+                    if (data.serial_status === 'CONNECTED') {
+                        samEl.style.color = 'var(--safe-core)';
+                    } else {
+                        samEl.style.color = 'var(--accent-core)';
+                    }
+                }
             }).catch(err => {
                 console.error("Stats check offline", err);
                 document.getElementById('connStatus').classList.remove('active');
             })
             .finally(() => {
-                setTimeout(updateDashboard, 6000);
+                setTimeout(updateDashboard, 12000);
             });
         }
         updateDashboard();
@@ -474,6 +498,14 @@
             fetch(`${bridgeUrl}/lk/${cmd}`).then(res => res.json()).then(data => {
                 if(data.output) data.output.split('\n').forEach(line => logToTerm(line, 'sys'));
             });
+        }
+
+        function runObsidian() {
+            switchTab('term', document.querySelectorAll('.nav-item')[3]);
+            logToTerm(`OBSIDIAN: Samsung FRP Bypass...`);
+            fetch(`${bridgeUrl}/obsidian/samsung-frp`).then(res => res.json()).then(data => {
+                if(data.output) data.output.split('\n').forEach(line => logToTerm(line, 'sys'));
+            }).catch(e => logToTerm("ERROR: " + e, 'sys'));
         }
 
         function toggleTunnel() {

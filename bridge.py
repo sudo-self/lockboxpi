@@ -3,6 +3,8 @@ from flask_cors import CORS
 import os
 import subprocess
 import logging
+import serial
+import time
 
 # Configure basic logging for reliability and debugging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -77,14 +79,29 @@ def check_usb_devices():
         logging.error(f"USB check error: {e}")
     return mtk, usb_active
 
-def get_tunnel_url():
-    # Check if cloudflared tunnel service is running
+def check_serial_devices():
+    import glob
+    ports = glob.glob('/dev/ttyACM*') + glob.glob('/dev/ttyUSB*')
+    return "CONNECTED" if ports else "DISCONNECTED"
+
+def is_process_running(name):
     try:
-        result = subprocess.run(["systemctl", "is-active", "cloudflared"], capture_output=True, text=True)
-        if result.stdout.strip() == "active":
-            return "https://lbpi.jessejesse.com"
+        for p in os.listdir('/proc'):
+            if p.isdigit():
+                try:
+                    with open(os.path.join('/proc', p, 'comm'), 'r') as f:
+                        if name in f.read():
+                            return True
+                except:
+                    continue
     except Exception as e:
-        logging.error(f"Failed to check tunnel status: {e}")
+        logging.error(f"Failed process check: {e}")
+    return False
+
+def get_tunnel_url():
+    # Fast check without forking a subprocess
+    if is_process_running("cloudflared"):
+        return "https://lbpi.jessejesse.com"
     return None
 
 @app.route('/tunnel/toggle', methods=['POST'])
@@ -115,6 +132,7 @@ def get_stats():
     
     ip = get_ip()
     mtk, usb_active = check_usb_devices()
+    serial_status = check_serial_devices()
     
     adb = "NONE"
     if usb_active:
@@ -130,6 +148,7 @@ def get_stats():
         uptime=get_uptime(),
         device=adb,
         mtk_status=mtk,
+        serial_status=serial_status,
         ip_address=ip,
         usb_active=usb_active,
         tunnel_url=get_tunnel_url()
@@ -241,16 +260,108 @@ def run_lk_action(cmd):
     except Exception as e:
         return jsonify(status="error", output=str(e))
 
-if __name__ == '__main__':
-    # Apply touch orientation matrix for 3.5" TFT on startup
-    try:
-        # Calibrated Matrix for 3.5" TFT
-        matrix = "1.1 0 -0.05 0 1.1 -0.05 0 0 1" 
-        subprocess.run(f"DISPLAY=:0 xinput set-prop 'ADS7846 Touchscreen' 'Coordinate Transformation Matrix' {matrix}", shell=True, check=True)
-        logging.info("Touch calibration applied successfully.")
-    except Exception as e:
-        logging.error(f"Touch Calibration Failed: {e}")
+class ObsidianFRP:
+    def __init__(self, serial_port=None, baudrate=115200):
+        self.serial_port = serial_port
+        self.baudrate = baudrate
+        self.ser = None
+        self.logs = []
+
+    def log(self, message, msg_type='INFO'):
+        timestamp = time.strftime('%H:%M:%S')
+        log_msg = f"[{timestamp}] [{msg_type}] {message}"
+        self.logs.append(log_msg)
+        logging.info(log_msg)
+
+    def connect_serial(self):
+        try:
+            self.ser = serial.Serial(self.serial_port, self.baudrate, timeout=1)
+            self.log(f"SERIAL PORT {self.serial_port} OPENED")
+            return True
+        except Exception as e:
+            self.log(f"SERIAL ERROR: {e}", "ERROR")
+            return False
+
+    def disconnect_serial(self):
+        if self.ser and self.ser.is_open:
+            self.ser.close()
+            self.log("SERIAL DISCONNECTED")
+
+    def send_at_command(self, command):
+        if not self.ser or not self.ser.is_open:
+            self.log("ERROR: NO ACTIVE SERIAL SESSION", "ERROR")
+            return
+        try:
+            if not command.endswith('\r\n'):
+                command += '\r\n'
+            self.log(command.strip(), "CMD")
+            self.ser.write(command.encode())
+            time.sleep(0.5)
+            response = self.ser.read_all().decode(errors='ignore')
+            if response:
+                for line in response.splitlines():
+                    if line.strip():
+                        self.log(f"RECV >> {line.strip()}")
+        except Exception as e:
+            self.log(f"SEND ERROR: {e}", "ERROR")
+
+    def send_adb_command(self, command):
+        try:
+            self.log(f"SHELL >> {command}", "CMD")
+            cmd_list = ['adb', 'shell'] + command.split()
+            result = subprocess.run(cmd_list, capture_output=True, text=True)
+            if result.returncode == 0:
+                self.log("EXECUTION SUCCESS")
+                if result.stdout:
+                    self.log(result.stdout.strip())
+            else:
+                self.log(f"EXECUTION FAILED: {result.stderr.strip()}", "ERROR")
+        except Exception as e:
+            self.log(f"ADB ERROR: {e}", "ERROR")
+
+    def init_adb_handshake(self):
+        try:
+            self.log("INITIALIZING ADB HANDSHAKE...")
+            result = subprocess.run(['adb', 'devices'], capture_output=True, text=True)
+            if result.returncode == 0:
+                self.log("ADB BRIDGE ESTABLISHED")
+                self.log(result.stdout.strip())
+            else:
+                self.log("ADB ERROR: Ensure adb is installed and device is connected", "ERROR")
+        except Exception as e:
+            self.log(f"ADB INIT ERROR: {e}", "ERROR")
+
+@app.route('/obsidian/samsung-frp')
+def run_obsidian_frp():
+    import glob
+    ports = glob.glob('/dev/ttyACM*') + glob.glob('/dev/ttyUSB*')
+    serial_port = ports[0] if ports else '/dev/ttyACM0'
+
+    frp = ObsidianFRP(serial_port=serial_port, baudrate=115200)
     
+    # Interface 01: Serial AT Bridge
+    if frp.connect_serial():
+        frp.send_at_command('AT+KSTRINGB=0,3')
+        frp.send_at_command('AT+DUMPCTRL=1,0')
+        frp.send_at_command('AT+DEBUGLVC=0,5')
+        frp.send_at_command('AT+SWATD=0')
+        frp.send_at_command('AT+ACTIVATE=0,0,0')
+        frp.send_at_command('AT+SWATD=1')
+        frp.disconnect_serial()
+    else:
+        frp.log("COULD NOT OPEN SERIAL AT INTERFACE. CONTINUING TO ADB FALLBACK.", "WARN")
+
+    # Interface 02: USB ADB Bridge
+    frp.init_adb_handshake()
+    frp.send_adb_command('settings put global setup_wizard_has_run 1')
+    frp.send_adb_command('settings put secure user_setup_complete 1')
+    frp.send_adb_command('content insert --uri content://settings/secure --bind name:s:DEVICE_PROVISIONED --bind value:i:1')
+    frp.send_adb_command('content insert --uri content://settings/secure --bind name:s:user_setup_complete --bind value:i:1')
+    frp.send_adb_command('am start -c android.intent.category.HOME -a android.intent.action.MAIN')
+    
+    return jsonify(status="success", output="\n".join(frp.logs))
+
+if __name__ == '__main__':
     # Trigger boot report to Google Doc in the background
     try:
         subprocess.Popen(["python3", "/home/lockboxpi/report_boot.py"], start_new_session=True)

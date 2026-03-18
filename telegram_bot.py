@@ -6,8 +6,15 @@ import shlex
 import logging
 
 # --- Configuration ---
-TOKEN = '8698638609:AAEaE1oKl1307vB11rOK_RoDniiAm2BeELY'
-ALLOWED_USERS = [7251722622]
+# Sensative info should be set as environment variables or in a local .env file
+# Example .env file content:
+# BOT_TOKEN=your_token_here
+# ALLOWED_USERS=12345678,98765432
+TOKEN = os.getenv('BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE')
+ALLOWED_USERS_RAW = os.getenv('ALLOWED_USERS', '0')
+ALLOWED_USERS = [int(u.strip()) for u in ALLOWED_USERS_RAW.split(',') if u.strip().replace('-', '').isdigit()]
+CHAT_ID_RAW = os.getenv('CHAT_ID', '0')
+CHAT_ID = int(CHAT_ID_RAW.strip()) if CHAT_ID_RAW.strip().replace('-', '').isdigit() else 0
 DUMPS_DIR = '/var/www/dumps'
 OUTPUT_LIMIT = 3500  # characters for stdout
 ERROR_LIMIT = 500    # characters for stderr
@@ -24,7 +31,11 @@ logging.basicConfig(
 
 # --- Helpers ---
 def is_allowed(message):
-    return message.from_user.id in ALLOWED_USERS
+    user_ok = message.from_user.id in ALLOWED_USERS
+    # If CHAT_ID is 0, allow from any chat (where user is authorized).
+    # If CHAT_ID is set, only allow from that specific chat ID.
+    chat_ok = (CHAT_ID == 0) or (message.chat.id == CHAT_ID)
+    return user_ok and chat_ok
 
 def run_command(command, shell=False):
     try:
@@ -49,9 +60,8 @@ def run_command(command, shell=False):
 def secure(handler):
     def wrapper(message):
         if not is_allowed(message):
-            if message.chat.type not in ["group", "supergroup"]:
-                bot.reply_to(message, "Unauthorized")
-            logging.warning(f"Unauthorized access attempt by {message.from_user.id}")
+            bot.reply_to(message, "Unauthorized")
+            logging.warning(f"Unauthorized access attempt by {message.from_user.id} in chat {message.chat.id}")
             return
         return handler(message)
     return wrapper
@@ -92,7 +102,11 @@ def send_welcome(message):
         "/touch_calib - Calibrates the touchscreen\n"
         "/re_bridge - Restarts bridge connection\n"
         "/install_apk - Installs an APK\n"
-        "/samsung - Interactive Samsung FRP flow"
+        "/samsung - Interactive Samsung FRP flow\n"
+        "/kick - Kicks a user from the group\n"
+        "/invite - Generates a one-time invite link\n"
+        "/figlet - Prints text in ASCII art\n"
+        "/lockboxpi - Shows system info via fastfetch"
     )
     bot.reply_to(message, help_text, parse_mode="Markdown")
 
@@ -249,6 +263,69 @@ def handle_installapk(message):
         send_chunks(message.chat.id, run_command(cmd, shell=True))
     else:
         bot.reply_to(message, "Usage: /installapk <path_to_apk>")
+
+# --- Figlet ---
+@bot.message_handler(commands=['figlet'])
+@secure
+def handle_figlet(message):
+    parts = message.text.split(maxsplit=1)
+    if len(parts) > 1:
+        text = parts[1]
+        logging.info(f"{message.from_user.id} ran figlet: {text}")
+        output = run_command(f'figlet "{text}"', shell=True)
+        send_chunks(message.chat.id, output)
+    else:
+        bot.reply_to(message, "Usage: /figlet <text>")
+
+# --- LockboxPi Stats ---
+@bot.message_handler(commands=['lockboxpi'])
+@secure
+def handle_lockboxpi(message):
+    logging.info(f"{message.from_user.id} ran lockboxpi (fastfetch)")
+    # Use --pipe for plain output suitable for Telegram
+    output = run_command('fastfetch --pipe', shell=True)
+    send_chunks(message.chat.id, output)
+
+# --- Kick User ---
+@bot.message_handler(commands=['kick'])
+@secure
+def handle_kick(message):
+    parts = message.text.split(maxsplit=1)
+    
+    # Kick by replying to a message
+    if message.reply_to_message:
+        target_id = message.reply_to_message.from_user.id
+        target_name = message.reply_to_message.from_user.first_name
+    # Kick by providing a numeric user ID
+    elif len(parts) > 1 and parts[1].strip().replace('-', '').isdigit():
+        target_id = int(parts[1].strip())
+        target_name = parts[1].strip()
+    # Attempting to kick by @username
+    elif len(parts) > 1:
+        bot.reply_to(message, "⚠️ **Telegram API Limitation:** Bots cannot kick by `@username` directly.\n\nPlease either:\n1. **Reply** to one of their messages with `/kick`\n2. Provide their numeric User ID: `/kick 123456789`", parse_mode="Markdown")
+        return
+    else:
+        bot.reply_to(message, "Usage:\n- Reply to their message with `/kick`\n- Or use `/kick <user_id>`", parse_mode="Markdown")
+        return
+
+    try:
+        # Ban and immediately unban to remove them from the group without a permanent ban
+        bot.ban_chat_member(message.chat.id, target_id)
+        bot.unban_chat_member(message.chat.id, target_id)
+        bot.reply_to(message, f"👢 Successfully kicked {target_name}.")
+    except Exception as e:
+        bot.reply_to(message, f"❌ Failed to kick. Make sure I am an admin and the target is not an admin.\n`{e}`", parse_mode="Markdown")
+
+# --- Invite User ---
+@bot.message_handler(commands=['invite'])
+@secure
+def handle_invite(message):
+    try:
+        # Generate a one-time use invite link for the current chat
+        invite_link = bot.create_chat_invite_link(message.chat.id, member_limit=1).invite_link
+        bot.reply_to(message, f"🔗 Here is a one-time invite link:\n{invite_link}")
+    except Exception as e:
+        bot.reply_to(message, f"❌ Failed to generate invite link. Make sure I am an admin with the 'Invite Users' permission.\n`{e}`", parse_mode="Markdown")
 
 # --- Reboot with confirmation ---
 @bot.message_handler(commands=['reboot'])

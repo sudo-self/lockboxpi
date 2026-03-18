@@ -2,8 +2,7 @@
 
 # Apply immediately for the current session
 export DISPLAY=:0
-xinput set-prop 'ADS7846 Touchscreen' 'Coordinate Transformation Matrix' -1 0 1 0 1 0 0 0 1
-xinput set-prop 'ADS7846 Touchscreen' 'Evdev Axis Inversion' 1 0
+xinput set-prop 'ADS7846 Touchscreen' 'Coordinate Transformation Matrix' 1.1 0 -0.05 0 1.1 -0.05 0 0 1 || true
 echo "Touch calibration applied to current X11 session."
 
 # Make it persistent across reboots and screen power cycles
@@ -14,8 +13,7 @@ write_config() {
     echo 'Section "InputClass"' | sudo tee $1 > /dev/null
     echo '        Identifier      "calibration"' | sudo tee -a $1 > /dev/null
     echo '        MatchProduct    "ADS7846 Touchscreen"' | sudo tee -a $1 > /dev/null
-    echo '        Option  "TransformationMatrix"  "-1 0 1 0 1 0 0 0 1"' | sudo tee -a $1 > /dev/null
-    echo '        Option  "InvertX" "true"' | sudo tee -a $1 > /dev/null
+    echo '        Option  "TransformationMatrix"  "1.1 0 -0.05 0 1.1 -0.05 0 0 1"' | sudo tee -a $1 > /dev/null
     echo 'EndSection' | sudo tee -a $1 > /dev/null
 }
 
