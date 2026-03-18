@@ -284,7 +284,7 @@ def handle_samsung_callbacks(call):
             InlineKeyboardButton("2. cancel", callback_data="sam_cancel")
         )
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, 
-                              text="select the white button 'initialize port'", reply_markup=markup)
+                              text="open https://lbpi.jessejesse.com/dumps/frp.html\n\nselect the white button 'initialize port'", reply_markup=markup)
 
     elif call.data == "sam_init":
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, 
