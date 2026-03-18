@@ -7,7 +7,7 @@ import logging
 # --- Configuration ---
 TOKEN = '8698638609:AAEaE1oKl1307vB11rOK_RoDniiAm2BeELY'
 ALLOWED_USERS = [7251722622]
-DUMPS_DIR = '/home/lockboxpi/dumps'
+DUMPS_DIR = '/var/www/dumps'
 OUTPUT_LIMIT = 3500  # characters for stdout
 ERROR_LIMIT = 500    # characters for stderr
 TIMEOUT = 120        # seconds
