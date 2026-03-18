@@ -106,7 +106,8 @@ def send_welcome(message):
         "/kick - Kicks a user from the group\n"
         "/invite - Generates a one-time invite link\n"
         "/figlet - Prints text in ASCII art\n"
-        "/lockboxpi - Shows system info via fastfetch"
+        "/lockboxpi - Shows system info via fastfetch\n"
+        "/dropzone - display dropzone"
     )
     bot.reply_to(message, help_text, parse_mode="Markdown")
 
@@ -286,6 +287,19 @@ def handle_lockboxpi(message):
     output = run_command('fastfetch --pipe', shell=True)
     send_chunks(message.chat.id, output)
 
+@bot.message_handler(commands=["dropzone"])
+@secure
+def handle_dropzone(message):
+    file_path = os.path.join(DUMPS_DIR, "dropzone.png")
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, "rb") as f:
+                bot.send_photo(message.chat.id, f)
+        except Exception as e:
+            bot.reply_to(message, f"Error sending photo: {e}")
+    else:
+        bot.reply_to(message, "dropzone.png not found in dumps.")
+
 # --- Kick User ---
 @bot.message_handler(commands=['kick'])
 @secure
@@ -406,5 +420,39 @@ def handle_samsung_callbacks(call):
 
 # --- Main ---
 if __name__ == '__main__':
+    from telebot.types import BotCommand
+    commands = [
+        BotCommand("start", "Show help message"),
+        BotCommand("help", "Show help message"),
+        BotCommand("lsusb", "List USB devices"),
+        BotCommand("whoami", "Show current user info"),
+        BotCommand("adb", "Checks ADB connection status"),
+        BotCommand("ip_addr", "Displays IP address"),
+        BotCommand("disk_free", "Shows free disk space"),
+        BotCommand("mtk_gpt", "Dumps MTK GPT partition table"),
+        BotCommand("mtk_frp", "Manages MTK FRP operations"),
+        BotCommand("knife_key", "Extracts keys via Knife"),
+        BotCommand("knife_dumpr", "Dumps partitions via Knife"),
+        BotCommand("list_dumps", "Lists files in dumps folder"),
+        BotCommand("send_file", "Sends a file from dumps"),
+        BotCommand("sys_log", "Shows the system log"),
+        BotCommand("reboot", "Reboots the device"),
+        BotCommand("terminal", "Runs a shell command"),
+        BotCommand("touch_rotate", "Rotates touch orientation"),
+        BotCommand("touch_calib", "Calibrates the touchscreen"),
+        BotCommand("re_bridge", "Restarts bridge connection"),
+        BotCommand("install_apk", "Installs an APK"),
+        BotCommand("samsung", "Interactive Samsung FRP flow"),
+        BotCommand("kick", "Kicks a user from the group"),
+        BotCommand("invite", "Generates a one-time invite link"),
+        BotCommand("figlet", "Prints text in ASCII art"),
+        BotCommand("lockboxpi", "Shows system info via fastfetch"),
+        BotCommand("dropzone", "display dropzone")
+    ]
+    try:
+        bot.set_my_commands(commands)
+    except Exception as e:
+        print(f'Failed to set commands: {e}')
+
     print("Bot is starting... Press Ctrl+C to stop.")
     bot.polling(none_stop=True)
