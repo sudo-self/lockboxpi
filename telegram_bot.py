@@ -61,17 +61,34 @@ def send_chunks(chat_id, text):
         bot.send_message(chat_id, f"```text\n{text[i:i+4000]}\n```", parse_mode="Markdown")
 
 # --- Handlers ---
-@bot.message_handler(commands=['start', 'help'])
+@bot.message_handler(commands=['start', 'help', 'commands'])
 def send_welcome(message):
     help_text = (
-        "Trixie Bot - Command & Control\n\n"
-        "/lsusb, /whoami, /adb, /ip_addr, /disk_free\n"
-        "/mtk_gpt, /mtk_frp\n"
-        "/knife_key, /knife_dumpr\n"
-        "/list_dumps - List files in dumps\n"
-        "/send_file <filename> - Send file from dumps\n"
-        "/sys_log, /reboot, /terminal <cmd>\n"
-        "/touch_rotate, /touch_calib, /re_bridge, /install_apk"
+        "commands - Lists commands\n"
+        "lsusb - Lists connected USB devices\n"
+        "whoami - Shows current user info\n"
+        "adb - Checks ADB connection status\n"
+        "adb_devices - Lists connected ADB devices\n"
+        "adb_bootloader - Reboots device to bootloader\n"
+        "ip_addr - Displays IP address\n"
+        "disk_free - Shows free disk space\n"
+        "mtk_help - Shows MTK Client help\n"
+        "mtk_gpt - Dumps MTK GPT partition table\n"
+        "mtk_gettargetconfig - Gets MTK target config\n"
+        "mtk_frp - Manages MTK FRP operations\n"
+        "mtk_unlock - Unlocks MTK device via seccfg\n"
+        "mtk_e_frp - Erases MTK FRP partition\n"
+        "knife_key - Extracts keys via Knife\n"
+        "knife_dumpr - Dumps partitions via Knife\n"
+        "list_dumps - Lists files in dumps folder\n"
+        "send_file - Sends a file from dumps\n"
+        "sys_log - Shows the system log\n"
+        "reboot - Reboots the device\n"
+        "terminal - Runs a shell command\n"
+        "touch_rotate - Rotates touch orientation\n"
+        "touch_calib - Calibrates the touchscreen\n"
+        "re_bridge - Restarts bridge connection\n"
+        "install_apk - Installs an APK"
     )
     bot.reply_to(message, help_text)
 
@@ -108,6 +125,8 @@ BASIC_CMDS = {
     'lsusb': 'lsusb',
     'whoami': 'whoami',
     'adb': 'adb devices',
+    'adb_devices': 'adb devices',
+    'adb_bootloader': 'adb reboot bootloader',
     'ip_addr': 'hostname -I',
     'disk_free': 'df -h',
     'sys_log': 'dmesg | tail -n 30'
@@ -124,6 +143,10 @@ for cmd_name, cmd_exec in BASIC_CMDS.items():
 TOOLS = {
     'mtk_gpt': '/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py printgpt',
     'mtk_frp': '/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py e frp',
+    'mtk_help': '/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py -h',
+    'mtk_gettargetconfig': '/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py gettargetconfig',
+    'mtk_unlock': '/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py da seccfg unlock',
+    'mtk_e_frp': '/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py e frp',
     'knife_key': 'bash /home/lockboxpi/LockKnife/LockKnife.sh --debug',
     'knife_dumpr': 'bash /home/lockboxpi/LockKnife/LockKnife.sh'
 }
