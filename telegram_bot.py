@@ -274,7 +274,7 @@ def handle_samsung_callbacks(call):
             InlineKeyboardButton("2. cancel", callback_data="sam_cancel")
         )
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, 
-                              text="once device is connected open https://73.243.235.226/dumps/frp.html", reply_markup=markup)
+                              text="once device is connected open [Samsung FRP](https://73.243.235.226/dumps/frp.html)", reply_markup=markup, parse_mode="Markdown")
 
     elif call.data == "sam_chrome":
         markup = InlineKeyboardMarkup()
