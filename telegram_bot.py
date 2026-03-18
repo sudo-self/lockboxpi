@@ -64,6 +64,7 @@ def send_chunks(chat_id, text):
 @bot.message_handler(commands=['start', 'help', 'commands'])
 def send_welcome(message):
     help_text = (
+        "💡 *Upload Files:* Send any file, photo, or video to this chat to upload it to the dumps folder.\n\n"
         "commands - Lists commands\n"
         "lsusb - Lists connected USB devices\n"
         "whoami - Shows current user info\n"
@@ -90,7 +91,7 @@ def send_welcome(message):
         "re_bridge - Restarts bridge connection\n"
         "install_apk - Installs an APK"
     )
-    bot.reply_to(message, help_text)
+    bot.reply_to(message, help_text, parse_mode="Markdown")
 
 # --- File Management ---
 @bot.message_handler(commands=['list_dumps'])
@@ -119,6 +120,39 @@ def handle_send_file(message):
             bot.reply_to(message, f"Error sending file: {e}")
     else:
         bot.reply_to(message, "File not found in dumps.")
+
+@bot.message_handler(content_types=['document', 'photo', 'video', 'audio'])
+@secure
+def handle_file_upload(message):
+    try:
+        if message.content_type == 'document':
+            file_id = message.document.file_id
+            file_name = message.document.file_name
+        elif message.content_type == 'photo':
+            file_id = message.photo[-1].file_id
+            file_name = f"photo_{file_id}.jpg"
+        elif message.content_type == 'video':
+            file_id = message.video.file_id
+            file_name = message.video.file_name or f"video_{file_id}.mp4"
+        elif message.content_type == 'audio':
+            file_id = message.audio.file_id
+            file_name = message.audio.file_name or f"audio_{file_id}.mp3"
+
+        if not file_name:
+            file_name = f"file_{file_id}"
+
+        file_info = bot.get_file(file_id)
+        downloaded_file = bot.download_file(file_info.file_path)
+
+        file_path = os.path.join(DUMPS_DIR, file_name)
+        with open(file_path, 'wb') as new_file:
+            new_file.write(downloaded_file)
+
+        bot.reply_to(message, f"✅ File '{file_name}' saved to dumps folder.")
+        logging.info(f"{message.from_user.id} uploaded file: {file_name}")
+    except Exception as e:
+        bot.reply_to(message, f"❌ Error saving file: {e}")
+        logging.error(f"Error saving uploaded file: {e}")
 
 # --- Basic & System Commands ---
 BASIC_CMDS = {
