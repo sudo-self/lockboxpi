@@ -265,7 +265,11 @@ def handle_samsung_callbacks(call):
     bot.answer_callback_query(call.id)  # Acknowledge the callback
 
     if call.data == "sam_cancel":
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="Canceled.")
+        try:
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+            bot.send_message(call.message.chat.id, "Canceled.")
+        except Exception:
+            bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="Canceled.")
 
     elif call.data == "sam_plugged":
         markup = InlineKeyboardMarkup()
@@ -283,12 +287,27 @@ def handle_samsung_callbacks(call):
             InlineKeyboardButton("1. initialized", callback_data="sam_init"),
             InlineKeyboardButton("2. cancel", callback_data="sam_cancel")
         )
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, 
-                              text="open https://lbpi.jessejesse.com/dumps/frp.html\n\nselect the white button 'initialize port'", reply_markup=markup)
+        try:
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+            photo1_path = os.path.join(DUMPS_DIR, 'photo_AgACAgEAAxkBAAIB5Wm6GTFsc9dOJdBfI0ONn1fIm3H2AAIkDGsbf1_QRZ9-wWhLzPqSAQADAgADeQADOgQ.jpg')
+            with open(photo1_path, 'rb') as photo:
+                bot.send_photo(call.message.chat.id, photo, 
+                               caption="open https://lbpi.jessejesse.com/dumps/frp.html\n\nselect the white button 'initialize port'", 
+                               reply_markup=markup)
+        except Exception as e:
+            logging.error(f"Error sending samsung photo1: {e}")
+            bot.send_message(call.message.chat.id, "open https://lbpi.jessejesse.com/dumps/frp.html\n\nselect the white button 'initialize port'", reply_markup=markup)
 
     elif call.data == "sam_init":
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, 
-                              text="press the sequence buttons in order, leave the divice connected and select the white initilize handshake button")
+        try:
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+            photo2_path = os.path.join(DUMPS_DIR, 'photo_AgACAgEAAxkBAAIB52m6GTp9pjC4-YQnUbxzqjb9DMpBAAIlDGsbf1_QRYQfj61bd7QAAQEAAwIAA3kAAzoE.jpg')
+            with open(photo2_path, 'rb') as photo:
+                bot.send_photo(call.message.chat.id, photo, 
+                               caption="press the sequence buttons in order, leave the divice connected and select the white initilize handshake button")
+        except Exception as e:
+            logging.error(f"Error sending samsung photo2: {e}")
+            bot.send_message(call.message.chat.id, "press the sequence buttons in order, leave the divice connected and select the white initilize handshake button")
 
 # --- Main ---
 if __name__ == '__main__':
