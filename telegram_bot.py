@@ -304,10 +304,10 @@ def handle_samsung_callbacks(call):
             photo2_path = os.path.join(DUMPS_DIR, 'photo_AgACAgEAAxkBAAIB52m6GTp9pjC4-YQnUbxzqjb9DMpBAAIlDGsbf1_QRYQfj61bd7QAAQEAAwIAA3kAAzoE.jpg')
             with open(photo2_path, 'rb') as photo:
                 bot.send_photo(call.message.chat.id, photo, 
-                               caption="press the sequence buttons in order, leave the divice connected and select the white initilize handshake button")
+                               caption="press the sequence buttons in order, leave the divice connected and select the white initilize handshake button\n\nThanks for using samsung remote frp service @lockboxtrixie_bot")
         except Exception as e:
             logging.error(f"Error sending samsung photo2: {e}")
-            bot.send_message(call.message.chat.id, "press the sequence buttons in order, leave the divice connected and select the white initilize handshake button")
+            bot.send_message(call.message.chat.id, "press the sequence buttons in order, leave the divice connected and select the white initilize handshake button\n\nThanks for using samsung remote frp service @lockboxtrixie_bot")
 
 # --- Main ---
 if __name__ == '__main__':
