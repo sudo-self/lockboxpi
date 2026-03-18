@@ -1,4 +1,5 @@
 import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import subprocess
 import os
 import shlex
@@ -89,7 +90,8 @@ def send_welcome(message):
         "touch_rotate - Rotates touch orientation\n"
         "touch_calib - Calibrates the touchscreen\n"
         "re_bridge - Restarts bridge connection\n"
-        "install_apk - Installs an APK"
+        "install_apk - Installs an APK\n"
+        "samsung - Interactive Samsung FRP flow"
     )
     bot.reply_to(message, help_text, parse_mode="Markdown")
 
@@ -241,6 +243,51 @@ def handle_reboot(message):
 def confirm_reboot(message):
     logging.info(f"{message.from_user.id} confirmed reboot")
     send_chunks(message.chat.id, run_command('sudo reboot', shell=True))
+
+# --- Samsung Interactive Flow ---
+@bot.message_handler(commands=['samsung'])
+@secure
+def handle_samsung(message):
+    markup = InlineKeyboardMarkup()
+    markup.add(
+        InlineKeyboardButton("1. plugged in", callback_data="sam_plugged"),
+        InlineKeyboardButton("2. cancel", callback_data="sam_cancel")
+    )
+    bot.reply_to(message, "Plug device in to computer USB", reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('sam_'))
+def handle_samsung_callbacks(call):
+    # Ensure the user who clicked the button is allowed
+    if call.from_user.id not in ALLOWED_USERS:
+        bot.answer_callback_query(call.id, "Unauthorized")
+        return
+
+    bot.answer_callback_query(call.id)  # Acknowledge the callback
+
+    if call.data == "sam_cancel":
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="Canceled.")
+
+    elif call.data == "sam_plugged":
+        markup = InlineKeyboardMarkup()
+        markup.add(
+            InlineKeyboardButton("1. open in chrome", callback_data="sam_chrome"),
+            InlineKeyboardButton("2. cancel", callback_data="sam_cancel")
+        )
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, 
+                              text="once device is connected open http://73.243.235.226/dumps/frp.html", reply_markup=markup)
+
+    elif call.data == "sam_chrome":
+        markup = InlineKeyboardMarkup()
+        markup.add(
+            InlineKeyboardButton("1. initialized", callback_data="sam_init"),
+            InlineKeyboardButton("2. cancel", callback_data="sam_cancel")
+        )
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, 
+                              text="select the white button 'initialize port'", reply_markup=markup)
+
+    elif call.data == "sam_init":
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, 
+                              text="press the sequence buttons in order then repeact steps for interface 02.")
 
 # --- Main ---
 if __name__ == '__main__':
