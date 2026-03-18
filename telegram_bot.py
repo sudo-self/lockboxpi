@@ -288,7 +288,7 @@ def handle_samsung_callbacks(call):
 
     elif call.data == "sam_init":
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, 
-                              text="press the sequence buttons in order then repeact steps for interface 02.")
+                              text="press the sequence buttons in order, leave the divice connected and select the white initilize handshake button")
 
 # --- Main ---
 if __name__ == '__main__':
