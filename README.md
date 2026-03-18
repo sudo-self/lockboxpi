@@ -1,6 +1,8 @@
 # Lockboxpi
 
-<img width="981" height="651" alt="lockboxGUI" src="https://github.com/user-attachments/assets/46c7a8af-9055-422b-9e82-8d32661373c4" />
+<img width="1485" height="914" alt="Untitled" src="https://github.com/user-attachments/assets/1c23a401-9ea9-4795-ae8a-67b298640615" />
+
+
 
 ## Project Overview
 
