@@ -137,12 +137,11 @@ def admin_menu():
 # --- Handlers ---
 @bot.message_handler(commands=['start', 'help', 'commands'])
 def send_welcome(message):
-    bot.reply_to(
-        message,
+    bot.send_message(
+        message.chat.id,
         "LockboxPi Control Panel\n\nSelect a category:",
         reply_markup=main_menu()
     )
-   
 
 # --- File Management ---
 @bot.message_handler(commands=['list_dumps', 'listdumps'])
