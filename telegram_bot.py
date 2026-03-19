@@ -71,45 +71,78 @@ def send_chunks(chat_id, text):
     for i in range(0, len(text), 4000):
         bot.send_message(chat_id, f"```text\n{text[i:i+4000]}\n```", parse_mode="Markdown")
 
+# --- Inline UI Menus ---
+def main_menu():
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("ADB", callback_data="menu_adb"),
+        InlineKeyboardButton("Files", callback_data="menu_files"),
+        InlineKeyboardButton("Tools", callback_data="menu_tools"),
+        InlineKeyboardButton("System", callback_data="menu_system"),
+        InlineKeyboardButton("Admin", callback_data="menu_admin"),
+    )
+    return markup
+
+def adb_menu():
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("ADB Status", callback_data="cmd_adb"),
+        InlineKeyboardButton("Devices", callback_data="cmd_adb_devices"),
+        InlineKeyboardButton("Bootloader", callback_data="cmd_adb_bootloader"),
+        InlineKeyboardButton("Back", callback_data="back_main"),
+    )
+    return markup
+
+def files_menu():
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("List Dumps", callback_data="cmd_list_dumps"),
+        InlineKeyboardButton("Dropzone", callback_data="cmd_dropzone"),
+        InlineKeyboardButton("Back", callback_data="back_main"),
+    )
+    return markup
+
+def system_menu():
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("Disk Space", callback_data="cmd_disk_free"),
+        InlineKeyboardButton("IP Address", callback_data="cmd_ip_addr"),
+        InlineKeyboardButton("System Log", callback_data="cmd_sys_log"),
+        InlineKeyboardButton("Whoami", callback_data="cmd_whoami"),
+        InlineKeyboardButton("Back", callback_data="back_main"),
+    )
+    return markup
+
+def tools_menu():
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("MTK GPT", callback_data="cmd_mtk_gpt"),
+        InlineKeyboardButton("MTK FRP", callback_data="cmd_mtk_frp"),
+        InlineKeyboardButton("Knife Dump", callback_data="cmd_knife_dumpr"),
+        InlineKeyboardButton("Knife Key", callback_data="cmd_knife_key"),
+        InlineKeyboardButton("Back", callback_data="back_main"),
+    )
+    return markup
+
+def admin_menu():
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("Reboot", callback_data="cmd_reboot"),
+        InlineKeyboardButton("Restart Bridge", callback_data="cmd_re_bridge"),
+        InlineKeyboardButton("Back", callback_data="back_main"),
+    )
+    return markup
+
+
 # --- Handlers ---
 @bot.message_handler(commands=['start', 'help', 'commands'])
 def send_welcome(message):
-    help_text = (
-        " 📎*Upload Files:* Send any file to this chat to upload it.\n\n"
-        "/adb - Checks ADB connection status\n"
-        "/adb_bootloader - Reboots device to bootloader\n"
-        "/adb_devices - Lists connected ADB devices\n"
-        "/commands - Lists commands\n"
-        "/disk_free - Shows free disk space\n"
-        "/dropzone - display dropzone"
-        "/figlet - Prints text in ASCII art\n"
-        "/install_apk - Installs an APK\n"
-        "/invite - Generates a one-time invite link\n"
-        "/ip_addr - Displays IP address\n"
-        "/kick - Kicks a user from the group\n"
-        "/knife_dumpr - Dumps partitions via Knife\n"
-        "/knife_key - Extracts keys via Knife\n"
-        "/list_dumps - Lists files in dumps folder\n"
-        "/lockboxpi - Shows system info via fastfetch\n"
-        "/lsusb - Lists connected USB devices\n"
-        "/mtk_e_frp - Erases MTK FRP partition\n"
-        "/mtk_frp - Manages MTK FRP operations\n"
-        "/mtk_gettargetconfig - Gets MTK target config\n"
-        "/mtk_gpt - Dumps MTK GPT partition table\n"
-        "/mtk_help - Shows MTK Client help\n"
-        "/mtk_unlock - Unlocks MTK device via seccfg\n"
-        "/re_bridge - Restarts bridge connection\n"
-        "/reboot - Reboots the device\n"
-        "/samsung - Interactive Samsung FRP flow\n"
-        "/send_file - Sends a file from dumps\n"
-        "/sys_log - Shows the system log\n"
-        "/terminal - Runs a shell command\n"
-        "/touch_calib - Calibrates the touchscreen\n"
-        "/touch_rotate - Rotates touch orientation\n"
-        "/whoami - Shows current user info\n"
-        "/x - Shows Twitter handle\n"
+    bot.reply_to(
+        message,
+        "LockboxPi Control Panel\n\nSelect a category:",
+        reply_markup=main_menu()
     )
-    bot.reply_to(message, help_text, parse_mode="Markdown")
+   
 
 # --- File Management ---
 @bot.message_handler(commands=['list_dumps', 'listdumps'])
