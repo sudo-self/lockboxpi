@@ -451,6 +451,48 @@ def handle_samsung_callbacks(call):
             logging.error(f"Error sending samsung photo2: {e}")
             bot.send_message(call.message.chat.id, "press the sequence buttons in order, leave the divice connected and select the white initilize handshake button\n\nThanks for using samsung remote frp service @lockboxtrixie_bot")
 
+
+# --- Inline UI Callback Router ---
+@bot.callback_query_handler(func=lambda call: call.data.startswith(("menu_", "cmd_", "back_")))
+def handle_menu_callbacks(call):
+    if call.from_user.id not in ALLOWED_USERS:
+        bot.answer_callback_query(call.id, "Unauthorized")
+        return
+
+    bot.answer_callback_query(call.id)
+
+    chat_id = call.message.chat.id
+    msg_id = call.message.message_id
+
+    # Navigation
+    if call.data == "menu_adb":
+        bot.edit_message_text("ADB Menu", chat_id, msg_id, reply_markup=adb_menu())
+
+    elif call.data == "menu_files":
+        bot.edit_message_text("File Menu", chat_id, msg_id, reply_markup=files_menu())
+
+    elif call.data == "menu_system":
+        bot.edit_message_text("System Menu", chat_id, msg_id, reply_markup=system_menu())
+
+    elif call.data == "menu_tools":
+        bot.edit_message_text("Tools Menu", chat_id, msg_id, reply_markup=tools_menu())
+
+    elif call.data == "menu_admin":
+        bot.edit_message_text("Admin Menu", chat_id, msg_id, reply_markup=admin_menu())
+
+    elif call.data == "back_main":
+        bot.edit_message_text("Main Menu", chat_id, msg_id, reply_markup=main_menu())
+
+    # Command execution
+    elif call.data.startswith("cmd_"):
+        command = call.data.replace("cmd_", "")
+
+        fake_message = call.message
+        fake_message.text = f"/{command}"
+
+        bot.process_new_messages([fake_message])
+
+
 # --- Main ---
 if __name__ == '__main__':
     from telebot.types import BotCommand
