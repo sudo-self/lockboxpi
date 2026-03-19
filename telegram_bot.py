@@ -71,7 +71,7 @@ def send_chunks(chat_id, text):
     for i in range(0, len(text), 4000):
         bot.send_message(chat_id, f"```text\n{text[i:i+4000]}\n```", parse_mode="Markdown")
 
-# --- Inline UI Menus ---
+# --- Inline UI Menus (FULL) ---
 def main_menu():
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
@@ -96,8 +96,9 @@ def adb_menu():
 def files_menu():
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
-        InlineKeyboardButton("List Dumps", callback_data="cmd_list_dumps"),
+        InlineKeyboardButton("List Dumps", callback_data="cmd_listdumps"),
         InlineKeyboardButton("Dropzone", callback_data="cmd_dropzone"),
+        InlineKeyboardButton("Send File", callback_data="cmd_sendfile"),
         InlineKeyboardButton("Back", callback_data="back_main"),
     )
     return markup
@@ -105,10 +106,11 @@ def files_menu():
 def system_menu():
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
-        InlineKeyboardButton("Disk Space", callback_data="cmd_disk_free"),
-        InlineKeyboardButton("IP Address", callback_data="cmd_ip_addr"),
-        InlineKeyboardButton("System Log", callback_data="cmd_sys_log"),
+        InlineKeyboardButton("Disk Space", callback_data="cmd_diskfree"),
+        InlineKeyboardButton("IP Address", callback_data="cmd_ipaddr"),
+        InlineKeyboardButton("System Log", callback_data="cmd_syslog"),
         InlineKeyboardButton("Whoami", callback_data="cmd_whoami"),
+        InlineKeyboardButton("LockboxPi Info", callback_data="cmd_lockboxpi"),
         InlineKeyboardButton("Back", callback_data="back_main"),
     )
     return markup
@@ -116,10 +118,19 @@ def system_menu():
 def tools_menu():
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
-        InlineKeyboardButton("MTK GPT", callback_data="cmd_mtk_gpt"),
-        InlineKeyboardButton("MTK FRP", callback_data="cmd_mtk_frp"),
-        InlineKeyboardButton("Knife Dump", callback_data="cmd_knife_dumpr"),
-        InlineKeyboardButton("Knife Key", callback_data="cmd_knife_key"),
+        InlineKeyboardButton("MTK GPT", callback_data="cmd_mtkgpt"),
+        InlineKeyboardButton("MTK FRP", callback_data="cmd_mtkfrp"),
+        InlineKeyboardButton("MTK Help", callback_data="cmd_mtkhelp"),
+        InlineKeyboardButton("MTK Unlock", callback_data="cmd_mtkunlock"),
+        InlineKeyboardButton("Knife Dump", callback_data="cmd_knifedumpr"),
+        InlineKeyboardButton("Knife Key", callback_data="cmd_knifekey"),
+        InlineKeyboardButton("Install APK", callback_data="cmd_installapk"),
+        InlineKeyboardButton("Figlet", callback_data="cmd_figlet"),
+        InlineKeyboardButton("Ringtone", callback_data="cmd_ringtone"),
+        InlineKeyboardButton("Text2Image", callback_data="cmd_text2image"),
+        InlineKeyboardButton("Touch Calib", callback_data="cmd_touchcalib"),
+        InlineKeyboardButton("Touch Rotate", callback_data="cmd_touchrotate"),
+        InlineKeyboardButton("Samsung FRP", callback_data="cmd_samsung"),
         InlineKeyboardButton("Back", callback_data="back_main"),
     )
     return markup
@@ -128,7 +139,9 @@ def admin_menu():
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
         InlineKeyboardButton("Reboot", callback_data="cmd_reboot"),
-        InlineKeyboardButton("Restart Bridge", callback_data="cmd_re_bridge"),
+        InlineKeyboardButton("Restart Bridge", callback_data="cmd_rebridge"),
+        InlineKeyboardButton("Kick User", callback_data="cmd_kick"),
+        InlineKeyboardButton("Invite User", callback_data="cmd_invite"),
         InlineKeyboardButton("Back", callback_data="back_main"),
     )
     return markup
@@ -463,6 +476,30 @@ def handle_menu_callbacks(call):
     chat_id = call.message.chat.id
     msg_id = call.message.message_id
 
+    # Navigation menus
+    if call.data == "menu_adb":
+        bot.edit_message_text("ADB Menu", chat_id, msg_id, reply_markup=adb_menu())
+    elif call.data == "menu_files":
+        bot.edit_message_text("File Menu", chat_id, msg_id, reply_markup=files_menu())
+    elif call.data == "menu_system":
+        bot.edit_message_text("System Menu", chat_id, msg_id, reply_markup=system_menu())
+    elif call.data == "menu_tools":
+        bot.edit_message_text("Tools Menu", chat_id, msg_id, reply_markup=tools_menu())
+    elif call.data == "menu_admin":
+        bot.edit_message_text("Admin Menu", chat_id, msg_id, reply_markup=admin_menu())
+    elif call.data == "back_main":
+        bot.edit_message_text("Main Menu", chat_id, msg_id, reply_markup=main_menu())
+
+    # Command execution via buttons
+    elif call.data.startswith("cmd_"):
+        command = call.data.replace("cmd_", "")
+        # Construct a fake message to trigger your normal command handlers
+        fake_message = call.message
+        fake_message.chat = call.message.chat
+        fake_message.from_user = call.from_user
+        fake_message.text = f"/{command}"
+        bot.process_new_messages([fake_message])
+
     # Navigation
     if call.data == "menu_adb":
         bot.edit_message_text("ADB Menu", chat_id, msg_id, reply_markup=adb_menu())
@@ -482,16 +519,16 @@ def handle_menu_callbacks(call):
     elif call.data == "back_main":
         bot.edit_message_text("Main Menu", chat_id, msg_id, reply_markup=main_menu())
 
-    # Command execution
-    elif call.data.startswith("cmd_"):
-        command = call.data.replace("cmd_", "")
+   # Command execution
+elif call.data.startswith("cmd_"):
+    command = call.data.replace("cmd_", "")
 
-        fake_message = call.message
-        fake_message.text = f"/{command}"
+    fake_message = call.message
+    fake_message.chat = call.message.chat
+    fake_message.from_user = call.from_user
+    fake_message.text = f"/{command}"
 
-        bot.process_new_messages([fake_message])
-
-
+    bot.process_new_messages([fake_message])
 # --- Main ---
 if __name__ == '__main__':
     from telebot.types import BotCommand
