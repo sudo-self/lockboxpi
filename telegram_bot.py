@@ -175,6 +175,7 @@ def get_misc_menu():
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
         InlineKeyboardButton("Samsung FRP", callback_data="run_samsung"),
+        InlineKeyboardButton("Web USB", callback_data="run_usb"),
         InlineKeyboardButton("iPhone", callback_data="run_iphone"),
         InlineKeyboardButton("Jailbreak", callback_data="run_jailbreak"),
         InlineKeyboardButton("Text to Image", callback_data="prompt_text2image"),
@@ -539,6 +540,22 @@ def handle_samsung_callbacks(call):
             with open(p2, 'rb') as f: bot.send_photo(call.message.chat.id, f, caption="Follow sequence, then handshake.")
         except: bot.send_message(call.message.chat.id, "Follow sequence, then handshake.")
 
+@bot.message_handler(commands=['usb'])
+@secure
+def handle_usb(message):
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("1. is usb connected", callback_data="usb_connected"), InlineKeyboardButton("2. cancel", callback_data="usb_cancel"))
+    bot.reply_to(message, "USB Connection Required", reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('usb_'))
+def handle_usb_callbacks(call):
+    if call.from_user.id not in ALLOWED_USERS: bot.answer_callback_query(call.id, "Unauthorized"); return
+    bot.answer_callback_query(call.id)
+    if call.data == "usb_cancel":
+        bot.edit_message_text("Canceled.", call.message.chat.id, call.message.message_id)
+    elif call.data == "usb_connected":
+        bot.edit_message_text("https://webusb-chrome.vercel.app\n\n<b>*must be chrome browser</b>", call.message.chat.id, call.message.message_id, parse_mode="HTML")
+
 # --- UI Prompt Step Handlers ---
 def process_terminal_step(message):
     if not message.text: return
@@ -657,6 +674,7 @@ def handle_ui_callbacks(call):
         elif cmd_name == "reboot": handle_reboot(call.message)
         elif cmd_name == "invite": handle_invite(call.message)
         elif cmd_name == "samsung": handle_samsung(call.message)
+        elif cmd_name == "usb": handle_usb(call.message)
         elif cmd_name == "iphone": handle_iphone(call.message)
         elif cmd_name == "jailbreak": handle_jailbreak(call.message)
         return
@@ -667,7 +685,7 @@ COMMAND_DESCRIPTIONS = {
     "ipaddr":"IP address", "iphone":"Show iPhone", "jailbreak":"Run p1f", "kick":"Kick user", "knifedumpr":"Knife dump", "knifekey":"Knife key", "listdumps":"List dumps",
     "lockboxpi":"Sys info", "lsusb":"USB devices", "mtkefrp":"MTK E-FRP", "mtkfrp":"MTK FRP", "mtkgettargetconfig":"MTK config",
     "mtkgpt":"MTK GPT", "mtkhelp":"MTK help", "mtkunlock":"MTK unlock", "reboot":"Reboot", "rebridge":"Restart bridge",
-    "ringtone":"Create ringtone", "samsung":"Samsung FRP", "sendfile":"Send file", "syslog":"System log", "terminal":"Shell command",
+    "ringtone":"Create ringtone", "samsung":"Samsung FRP", "usb":"Web USB Link", "sendfile":"Send file", "syslog":"System log", "terminal":"Shell command",
     "text2image":"Gen image", "touchcalib":"Calibrate", "touchrotate":"Rotate", "whoami":"User info", "x":"Twitter"
 }
 
