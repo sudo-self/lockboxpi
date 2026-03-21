@@ -30,7 +30,7 @@ def get_header_text():
         free_space = f"{int(free_bytes / (1024**3))}GB"
     except Exception:
         free_space = "N/A"
-    return f"<b>🍓{temp_str}  {free_space}</b>"
+    return f"<b>🍓RPi4  🌡️{temp_str}  💾 {free_space}</b>"
 
 
 bot = telebot.TeleBot(TOKEN)
@@ -78,8 +78,10 @@ def secure(handler):
     return wrapper
 
 def send_chunks(chat_id, text):
-    for i in range(0, len(text), 4000):
-        bot.send_message(chat_id, f"```text\n{text[i:i+4000]}\n```", parse_mode="HTML")
+    import html
+    # Reduce chunk size to account for HTML escaping expansion
+    for i in range(0, len(text), 3800):
+        bot.send_message(chat_id, f"<pre>{html.escape(text[i:i+3800])}</pre>", parse_mode="HTML")
 
 def get_duration(url):
     try:
@@ -173,6 +175,8 @@ def get_misc_menu():
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
         InlineKeyboardButton("Samsung FRP", callback_data="run_samsung"),
+        InlineKeyboardButton("iPhone", callback_data="run_iphone"),
+        InlineKeyboardButton("Jailbreak", callback_data="run_jailbreak"),
         InlineKeyboardButton("Text to Image", callback_data="prompt_text2image"),
         InlineKeyboardButton("Ringtone Maker", callback_data="prompt_ringtone"),
         InlineKeyboardButton("Figlet Text", callback_data="prompt_figlet"),
@@ -260,9 +264,9 @@ def admin_menu():
 
 
 # --- Handlers ---
-@bot.message_handler(commands=['start', 'help', 'commands', 'menu'])
+@bot.message_handler(commands=['start', 'help', 'menu'])
 def send_welcome(message):
-    photo_path = os.path.join(DUMPS_DIR, "photo_AgACAgEAAxkBAAIC-Wm79g3gRMq9DUvPWeCmcsmy_zsvAAKrC2sbkcTgRXtboki3tWKkAQADAgADeAADOgQ.jpg")
+    photo_path = os.path.join(DUMPS_DIR, "photo_AgACAgEAAxkBAAIC_2m9G9_3i-ssVmcg9UzYikUxOxq-AALTDGsbURPpRTRmU6gMXofDAQADAgADeQADOgQ.jpg")
     try:
         with open(photo_path, 'rb') as f:
             bot.send_photo(message.chat.id, f, caption=get_header_text(), reply_markup=get_main_menu(), parse_mode="HTML")
@@ -372,7 +376,8 @@ def handle_listdumps(message):
         bot.reply_to(message, f"Directory {DUMPS_DIR} does not exist.")
         return
     files = "\n".join([f for f in os.listdir(DUMPS_DIR) if not f.startswith('.')])
-    bot.reply_to(message, f"Files in dumps:\n```{files if files else 'Directory is empty'}```", parse_mode="HTML")
+    import html
+    bot.reply_to(message, f"Files in dumps:\n<pre>{html.escape(files) if files else 'Directory is empty'}</pre>", parse_mode="HTML")
 
 @bot.message_handler(commands=['send_file', 'sendfile'])
 @secure
@@ -484,6 +489,24 @@ def handle_reboot(message): bot.reply_to(message, "Send /confirm_reboot to confi
 @bot.message_handler(commands=['confirm_reboot'])
 @secure
 def confirm_reboot(message): send_chunks(message.chat.id, run_command('sudo reboot', shell=True))
+
+@bot.message_handler(commands=['iphone'])
+@secure
+def handle_iphone(message):
+    file_path = os.path.join(DUMPS_DIR, 'photo_AgACAgEAAyEFAATc-fVDAAICdGm94hAa_qj_xKIVURBgA91QsA9yAAJ3C2sbJ1PxRc3x5DqiMRsWAQADAgADeQADOgQ.jpg')
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, 'rb') as f:
+                bot.send_photo(message.chat.id, f)
+        except Exception as e:
+            bot.reply_to(message, f"Error sending image: {e}")
+    else:
+        bot.reply_to(message, "Image not found.")
+
+@bot.message_handler(commands=['jailbreak'])
+@secure
+def handle_jailbreak(message):
+    send_chunks(message.chat.id, run_command('p1f', shell=True))
 
 @bot.message_handler(commands=['samsung'])
 @secure
@@ -623,7 +646,7 @@ def handle_ui_callbacks(call):
         elif cmd_name in MISC: cmd_str = MISC[cmd_name]
             
         if cmd_str:
-            bot.send_message(call.message.chat.id, f"Executing `/{cmd_name}`...", parse_mode="HTML")
+            bot.send_message(call.message.chat.id, f"Executing <code>/{cmd_name}</code>...", parse_mode="HTML")
             send_chunks(call.message.chat.id, run_command(cmd_str, shell=True))
             return
             
@@ -634,18 +657,28 @@ def handle_ui_callbacks(call):
         elif cmd_name == "reboot": handle_reboot(call.message)
         elif cmd_name == "invite": handle_invite(call.message)
         elif cmd_name == "samsung": handle_samsung(call.message)
+        elif cmd_name == "iphone": handle_iphone(call.message)
+        elif cmd_name == "jailbreak": handle_jailbreak(call.message)
         return
 
+COMMAND_DESCRIPTIONS = {
+    "menu": "Show Bot Menu", "adb":"Checks ADB", "adbbootloader":"reboot bl", "adbdevices":"devices", "commands":"Lists commands", "diskfree":"Disk space",
+    "dropzone":"dropzone.png", "endpoints":"Pi endpoints", "figlet":"ASCII art", "installapk":"Install APK", "invite":"Invite link",
+    "ipaddr":"IP address", "iphone":"Show iPhone", "jailbreak":"Run p1f", "kick":"Kick user", "knifedumpr":"Knife dump", "knifekey":"Knife key", "listdumps":"List dumps",
+    "lockboxpi":"Sys info", "lsusb":"USB devices", "mtkefrp":"MTK E-FRP", "mtkfrp":"MTK FRP", "mtkgettargetconfig":"MTK config",
+    "mtkgpt":"MTK GPT", "mtkhelp":"MTK help", "mtkunlock":"MTK unlock", "reboot":"Reboot", "rebridge":"Restart bridge",
+    "ringtone":"Create ringtone", "samsung":"Samsung FRP", "sendfile":"Send file", "syslog":"System log", "terminal":"Shell command",
+    "text2image":"Gen image", "touchcalib":"Calibrate", "touchrotate":"Rotate", "whoami":"User info", "x":"Twitter"
+}
+
+@bot.message_handler(commands=['commands'])
+@secure
+def handle_commands(message):
+    cmd_list = "\n".join([f"/{k} - {v}" for k, v in sorted(COMMAND_DESCRIPTIONS.items())])
+    bot.reply_to(message, f"<b>Available Commands:</b>\n<pre>{cmd_list}</pre>", parse_mode="HTML")
+
 if __name__ == '__main__':
-    cmds = sorted([BotCommand(k, v) for k,v in {
-        "menu": "Show Bot Menu", "adb":"Checks ADB", "adbbootloader":"reboot bl", "adbdevices":"devices", "commands":"Lists commands", "diskfree":"Disk space",
-        "dropzone":"dropzone.png", "endpoints":"Pi endpoints", "figlet":"ASCII art", "installapk":"Install APK", "invite":"Invite link",
-        "ipaddr":"IP address", "kick":"Kick user", "knifedumpr":"Knife dump", "knifekey":"Knife key", "listdumps":"List dumps",
-        "lockboxpi":"Sys info", "lsusb":"USB devices", "mtkefrp":"MTK E-FRP", "mtkfrp":"MTK FRP", "mtkgettargetconfig":"MTK config",
-        "mtkgpt":"MTK GPT", "mtkhelp":"MTK help", "mtkunlock":"MTK unlock", "reboot":"Reboot", "rebridge":"Restart bridge",
-        "ringtone":"Create ringtone", "samsung":"Samsung FRP", "sendfile":"Send file", "syslog":"System log", "terminal":"Shell command",
-        "text2image":"Gen image", "touchcalib":"Calibrate", "touchrotate":"Rotate", "whoami":"User info", "x":"Twitter"
-    }.items()], key=lambda x: x.command)
+    cmds = sorted([BotCommand(k, v) for k, v in COMMAND_DESCRIPTIONS.items()], key=lambda x: x.command)
     try: bot.set_my_commands(cmds)
     except: pass
     print("Bot starting..."); bot.polling(none_stop=True)

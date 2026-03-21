@@ -1,0 +1,13 @@
+
+@bot.message_handler(commands=["dropzone"])
+@secure
+def handle_dropzone(message):
+    file_path = os.path.join(DUMPS_DIR, "dropzone.png")
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, "rb") as f:
+                bot.send_photo(message.chat.id, f)
+        except Exception as e:
+            bot.reply_to(message, f"Error sending photo: {e}")
+    else:
+        bot.reply_to(message, "dropzone.png not found in dumps.")
