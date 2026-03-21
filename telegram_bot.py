@@ -176,7 +176,7 @@ def get_files_menu():
 def get_misc_menu():
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
-        InlineKeyboardButton("Device ID Endpoint", callback_data="run_diagnostic"),
+        InlineKeyboardButton("Device ID Tool", callback_data="run_diagnostic"),
         InlineKeyboardButton("Samsung FRP", callback_data="run_samsung"),
         InlineKeyboardButton("Web USB", callback_data="run_usb"),
         InlineKeyboardButton("iPhone", callback_data="run_iphone"),
@@ -512,39 +512,34 @@ def handle_iphone(message):
 def handle_jailbreak(message):
     send_chunks(message.chat.id, run_command('p1f', shell=True))
 
-def generate_pin(offset_minutes=0):
-    # Hardcoded for sync bypass
-    return "123456"
-
 @bot.message_handler(commands=['diagnostic'])
 @secure
 def handle_diagnostic(message):
     url = "https://device-id-bot.vercel.app/"
-    pin = generate_pin(0)
-    
+
     # Generate QR Code in memory
     qr = qrcode.QRCode(version=1, box_size=10, border=5)
     qr.add_data(url)
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white")
-    
+
     # Save to a bytes buffer
     buf = io.BytesIO()
     img.save(buf, format='PNG')
     buf.seek(0)
-    
+
     # Setup the UI
     markup = InlineKeyboardMarkup()
     markup.add(
-        InlineKeyboardButton(f"PIN: {pin}", callback_data="diag_noop"),
+        InlineKeyboardButton("I agree", url=url),
         InlineKeyboardButton("Cancel", callback_data="diag_cancel")
     )
-    
+
     caption = (
         "🔗 *Diagnostic Portal*\n\n"
-        "Scan this QR to run diagnostics on a separate device.\n\n"
-        f"Link: {url}\n"
-        "🔑 **PIN:** `123456`"
+        "Scan this QR to run diagnostics on a separate device.\n"
+        "Basic information about your device will be collected for diagnostic use only.\n\n"
+        f"Link: {url}"
     )
 
     # Use send_photo to show the QR code with the buttons underneath
@@ -561,16 +556,12 @@ def handle_diagnostic_callbacks(call):
     if call.from_user.id not in ALLOWED_USERS:
         bot.answer_callback_query(call.id, "Unauthorized")
         return
-        
+
     if call.data == "diag_cancel":
         bot.answer_callback_query(call.id)
         # For photos, we delete the message instead of editing text
         bot.delete_message(call.message.chat.id, call.message.message_id)
         bot.send_message(call.message.chat.id, "Canceled.")
-    else:
-        # This handles the 'diag_noop' case
-        bot.answer_callback_query(call.id, "Enter 123456 on the website.")
-
 @bot.message_handler(func=lambda message: message.text and "🚨 New Diagnostic Report 🚨" in message.text)
 @secure
 def save_incoming_diagnostic(message):
