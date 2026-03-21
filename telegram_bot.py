@@ -7,6 +7,8 @@ import requests
 import shlex
 import logging
 import shutil
+import qrcode
+import io
 
 # --- Configuration ---
 TOKEN = os.getenv('BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE')
@@ -88,7 +90,7 @@ def get_duration(url):
         proc = subprocess.run(f"yt-dlp -g {url}", shell=True, capture_output=True, text=True)
         direct_url = proc.stdout.strip().split('\n')[0]
         probe = subprocess.run([
-            'ffprobe', '-v', 'error', '-show_entries', 'format=duration', 
+            'ffprobe', '-v', 'error', '-show_entries', 'format=duration',
             '-of', 'default=noprint_wrappers=1:nokey=1', direct_url
         ], capture_output=True, text=True)
         return float(probe.stdout.strip())
@@ -174,6 +176,7 @@ def get_files_menu():
 def get_misc_menu():
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
+        InlineKeyboardButton("Device ID Endpoint", callback_data="run_diagnostic"),
         InlineKeyboardButton("Samsung FRP", callback_data="run_samsung"),
         InlineKeyboardButton("Web USB", callback_data="run_usb"),
         InlineKeyboardButton("iPhone", callback_data="run_iphone"),
@@ -321,12 +324,12 @@ def handle_ringtone(message):
         return
     try: bot.delete_message(message.chat.id, message.message_id)
     except: pass
-    msg = bot.send_message(message.chat.id, "Fetching video duration...")
+    msg = bot.send_message(message.chat.id, "creating ringtone...")
     total_duration = get_duration(url)
     if total_duration is None:
         bot.edit_message_text(chat_id=message.chat.id, message_id=msg.message_id, text="Failed to fetch video info.")
         return
-    bot.edit_message_text(chat_id=message.chat.id, message_id=msg.message_id, text="Extracting 20s clip...")
+    bot.edit_message_text(chat_id=message.chat.id, message_id=msg.message_id, text="almost complete...")
     start_time = max(0, (total_duration / 2) - 10)
     ss = f"{int(start_time // 3600):02}:{int((start_time % 3600) // 60):02}:{start_time % 60:05.2f}"
     temp_dir = os.path.join(DUMPS_DIR, f"ringtone_{message.message_id}")
@@ -509,6 +512,83 @@ def handle_iphone(message):
 def handle_jailbreak(message):
     send_chunks(message.chat.id, run_command('p1f', shell=True))
 
+def generate_pin(offset_minutes=0):
+    # Hardcoded for sync bypass
+    return "123456"
+
+@bot.message_handler(commands=['diagnostic'])
+@secure
+def handle_diagnostic(message):
+    url = "https://device-id-bot.vercel.app/"
+    pin = generate_pin(0)
+    
+    # Generate QR Code in memory
+    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr.add_data(url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Save to a bytes buffer
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    
+    # Setup the UI
+    markup = InlineKeyboardMarkup()
+    markup.add(
+        InlineKeyboardButton(f"PIN: {pin}", callback_data="diag_noop"),
+        InlineKeyboardButton("Cancel", callback_data="diag_cancel")
+    )
+    
+    caption = (
+        "🔗 *Diagnostic Portal*\n\n"
+        "Scan this QR to run diagnostics on a separate device.\n\n"
+        f"Link: {url}\n"
+        "🔑 **PIN:** `123456`"
+    )
+
+    # Use send_photo to show the QR code with the buttons underneath
+    bot.send_photo(
+        message.chat.id,
+        buf,
+        caption=caption,
+        reply_markup=markup,
+        parse_mode="Markdown"
+    )
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('diag_'))
+def handle_diagnostic_callbacks(call):
+    if call.from_user.id not in ALLOWED_USERS:
+        bot.answer_callback_query(call.id, "Unauthorized")
+        return
+        
+    if call.data == "diag_cancel":
+        bot.answer_callback_query(call.id)
+        # For photos, we delete the message instead of editing text
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        bot.send_message(call.message.chat.id, "Canceled.")
+    else:
+        # This handles the 'diag_noop' case
+        bot.answer_callback_query(call.id, "Enter 123456 on the website.")
+
+@bot.message_handler(func=lambda message: message.text and "🚨 New Diagnostic Report 🚨" in message.text)
+@secure
+def save_incoming_diagnostic(message):
+    try:
+        report_id = "unknown"
+        for line in message.text.split('\n'):
+            if line.startswith("ID: "):
+                report_id = line.replace("ID: ", "").strip()
+                break
+        
+        filepath = os.path.join(DUMPS_DIR, f"{report_id}.txt")
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(message.text)
+            
+        bot.reply_to(message, f"✅ Saved diagnostic report to /dumps/{report_id}.txt")
+    except Exception as e:
+        bot.reply_to(message, f"❌ Error saving report: {e}")
+
 @bot.message_handler(commands=['samsung'])
 @secure
 def handle_samsung(message):
@@ -674,6 +754,7 @@ def handle_ui_callbacks(call):
         elif cmd_name == "reboot": handle_reboot(call.message)
         elif cmd_name == "invite": handle_invite(call.message)
         elif cmd_name == "samsung": handle_samsung(call.message)
+        elif cmd_name == "diagnostic": handle_diagnostic(call.message)
         elif cmd_name == "usb": handle_usb(call.message)
         elif cmd_name == "iphone": handle_iphone(call.message)
         elif cmd_name == "jailbreak": handle_jailbreak(call.message)
@@ -681,7 +762,7 @@ def handle_ui_callbacks(call):
 
 COMMAND_DESCRIPTIONS = {
     "menu": "Show Bot Menu", "adb":"Checks ADB", "adbbootloader":"reboot bl", "adbdevices":"devices", "commands":"Lists commands", "diskfree":"Disk space",
-    "dropzone":"dropzone.png", "endpoints":"Pi endpoints", "figlet":"ASCII art", "installapk":"Install APK", "invite":"Invite link",
+    "diagnostic": "Diagnostic tool", "dropzone":"dropzone.png", "endpoints":"Pi endpoints", "figlet":"ASCII art", "installapk":"Install APK", "invite":"Invite link",
     "ipaddr":"IP address", "iphone":"Show iPhone", "jailbreak":"Run p1f", "kick":"Kick user", "knifedumpr":"Knife dump", "knifekey":"Knife key", "listdumps":"List dumps",
     "lockboxpi":"Sys info", "lsusb":"USB devices", "mtkefrp":"MTK E-FRP", "mtkfrp":"MTK FRP", "mtkgettargetconfig":"MTK config",
     "mtkgpt":"MTK GPT", "mtkhelp":"MTK help", "mtkunlock":"MTK unlock", "reboot":"Reboot", "rebridge":"Restart bridge",
@@ -699,4 +780,4 @@ if __name__ == '__main__':
     cmds = sorted([BotCommand(k, v) for k, v in COMMAND_DESCRIPTIONS.items()], key=lambda x: x.command)
     try: bot.set_my_commands(cmds)
     except: pass
-    print("Bot starting..."); bot.polling(none_stop=True)
+    print("Bot starting..."); bot.remove_webhook(); bot.polling(none_stop=True)
