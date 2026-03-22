@@ -179,6 +179,7 @@ def get_misc_menu():
         InlineKeyboardButton("Device ID Tool", callback_data="run_diagnostic"),
         InlineKeyboardButton("Samsung FRP", callback_data="run_samsung"),
         InlineKeyboardButton("Web USB", callback_data="run_usb"),
+        InlineKeyboardButton("Get UUID", callback_data="run_getuuid"),
         InlineKeyboardButton("iPhone", callback_data="run_iphone"),
         InlineKeyboardButton("Jailbreak", callback_data="run_jailbreak"),
         InlineKeyboardButton("Text to Image", callback_data="prompt_text2image"),
@@ -406,7 +407,7 @@ def remote_install(ipa_path, chat_id):
 
     try:
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        photo_path = os.path.join(DUMPS_DIR, "photo_AgACAgEAAyEFAATc-fVDAAIDqmm_16reTAg7XPvyQPKPqLPyiQ9MAAIFDGsbB5cBRsISTtTpTS2KAQADAgADeQADOgQ.jpg")
+        photo_path = os.path.join(DUMPS_DIR, "appinstall.png")
         try:
             with open(photo_path, 'rb') as f:
                 bot.send_photo(chat_id, f)
@@ -433,12 +434,17 @@ def remote_install(ipa_path, chat_id):
 @secure
 def handle_file_upload(message):
     try:
+        file_name = None
         if message.content_type == 'document': file_id, file_name = message.document.file_id, message.document.file_name
-        elif message.content_type == 'photo': file_id, file_name = message.photo[-1].file_id, f"photo_{message.photo[-1].file_id}.jpg"
-        elif message.content_type == 'video': file_id, file_name = message.video.file_id, message.video.file_name or f"video_{message.video.file_id}.mp4"
-        elif message.content_type == 'audio': file_id, file_name = message.audio.file_id, message.audio.file_name or f"audio_{message.audio.file_id}.mp3"
-        if not file_name: file_name = f"file_{file_id}"
+        elif message.content_type == 'photo': file_id = message.photo[-1].file_id
+        elif message.content_type == 'video': file_id, file_name = message.video.file_id, message.video.file_name
+        elif message.content_type == 'audio': file_id, file_name = message.audio.file_id, message.audio.file_name
+        
         file_info = bot.get_file(file_id)
+        if not file_name:
+            ext = os.path.splitext(file_info.file_path)[1] or ''
+            file_name = f"{message.content_type}_{file_id}{ext}"
+            
         downloaded_file = bot.download_file(file_info.file_path)
         file_path = os.path.join(DUMPS_DIR, file_name)
         with open(file_path, 'wb') as new_file: new_file.write(downloaded_file)
@@ -542,6 +548,24 @@ def handle_iphone(message):
             bot.reply_to(message, f"Error sending image: {e}")
     else:
         bot.reply_to(message, "Image not found.")
+
+@bot.message_handler(commands=['getuuid'])
+@secure
+def handle_getuuid(message):
+    file_path = os.path.join(DUMPS_DIR, 'lockboxpi.mobileconfig')
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, 'rb') as f:
+                bot.send_document(
+                    message.chat.id, 
+                    f, 
+                    caption="📲 <b>Install this profile on your iPhone.</b>\n\nOnce installed, your iPhone will securely transmit its UUID back to this bot.",
+                    parse_mode="HTML"
+                )
+        except Exception as e:
+            bot.reply_to(message, f"Error sending profile: {e}")
+    else:
+        bot.reply_to(message, "Enrollment profile not found in dumps.")
 
 @bot.message_handler(commands=['jailbreak'])
 @secure
@@ -784,6 +808,7 @@ def handle_ui_callbacks(call):
         elif cmd_name == "diagnostic": handle_diagnostic(call.message)
         elif cmd_name == "usb": handle_usb(call.message)
         elif cmd_name == "iphone": handle_iphone(call.message)
+        elif cmd_name == "getuuid": handle_getuuid(call.message)
         elif cmd_name == "jailbreak": handle_jailbreak(call.message)
         return
 
