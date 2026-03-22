@@ -270,10 +270,10 @@ def admin_menu():
 # --- Handlers ---
 @bot.message_handler(commands=['start', 'help', 'menu'])
 def send_welcome(message):
-    photo_path = os.path.join(DUMPS_DIR, "photo_AgACAgEAAxkBAAIC_2m9G9_3i-ssVmcg9UzYikUxOxq-AALTDGsbURPpRTRmU6gMXofDAQADAgADeQADOgQ.jpg")
+    media_path = os.path.join(DUMPS_DIR, "trixie.gif")
     try:
-        with open(photo_path, 'rb') as f:
-            bot.send_photo(message.chat.id, f, caption=get_header_text(), reply_markup=get_main_menu(), parse_mode="HTML")
+        with open(media_path, 'rb') as f:
+            bot.send_animation(message.chat.id, f, caption=get_header_text(), reply_markup=get_main_menu(), parse_mode="HTML")
     except Exception as e:
         bot.reply_to(message, get_header_text(), reply_markup=get_main_menu(), parse_mode="HTML")
 
