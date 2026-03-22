@@ -398,6 +398,19 @@ def handle_sendfile(message):
         except Exception as e: bot.reply_to(message, f"Error sending file: {e}")
     else: bot.reply_to(message, "File not found in dumps.")
 
+def remote_install(ipa_path):
+    udid = "00008140-001A0C5E1E06801C"
+    cmd = ["/home/lockboxpi/alt-server/AltServer-aarch64", "-u", udid, "-i", ipa_path]
+    env = os.environ.copy()
+    env["ALTSERVER_ANISETTE_SERVER"] = "http://127.0.0.1:6969"
+    try:
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True, env=env)
+        return "🚀 IPA sent! Check your iPhone home screen."
+    except subprocess.CalledProcessError as e:
+        return f"❌ Error installing IPA:\n{e.stderr or e.stdout}"
+    except Exception as e:
+        return f"❌ Error: {e}"
+
 @bot.message_handler(content_types=['document', 'photo', 'video', 'audio'])
 @secure
 def handle_file_upload(message):
@@ -411,7 +424,13 @@ def handle_file_upload(message):
         downloaded_file = bot.download_file(file_info.file_path)
         file_path = os.path.join(DUMPS_DIR, file_name)
         with open(file_path, 'wb') as new_file: new_file.write(downloaded_file)
-        bot.reply_to(message, f"File '{file_name}' saved to dumps.")
+        
+        if file_name.lower().endswith('.ipa'):
+            bot.reply_to(message, f"File '{file_name}' saved. Starting IPA installation...")
+            install_result = remote_install(file_path)
+            bot.reply_to(message, install_result)
+        else:
+            bot.reply_to(message, f"File '{file_name}' saved to dumps.")
     except Exception as e: bot.reply_to(message, f"Error saving file: {e}")
 
 BASIC_CMDS = {'lsusb':'lsusb', 'whoami':'whoami', 'adb':'adb devices', 'adbdevices':'adb devices', 'adbbootloader':'adb reboot bootloader', 'ipaddr':'hostname -I', 'diskfree':'df -h', 'syslog':'dmesg | tail -n 30', 'x':'echo "@lightfighter719"'}
