@@ -9,6 +9,7 @@ import logging
 import shutil
 import qrcode
 import io
+import html
 
 # --- Configuration ---
 TOKEN = os.getenv('BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE')
@@ -80,7 +81,6 @@ def secure(handler):
     return wrapper
 
 def send_chunks(chat_id, text):
-    import html
     # Reduce chunk size to account for HTML escaping expansion
     for i in range(0, len(text), 3800):
         bot.send_message(chat_id, f"<pre>{html.escape(text[i:i+3800])}</pre>", parse_mode="HTML")
@@ -381,7 +381,6 @@ def handle_listdumps(message):
         bot.reply_to(message, f"Directory {DUMPS_DIR} does not exist.")
         return
     files = "\n".join([f for f in os.listdir(DUMPS_DIR) if not f.startswith('.')])
-    import html
     bot.reply_to(message, f"Files in dumps:\n<pre>{html.escape(files) if files else 'Directory is empty'}</pre>", parse_mode="HTML")
 
 @bot.message_handler(commands=['send_file', 'sendfile'])
@@ -566,6 +565,12 @@ def handle_getuuid(message):
         bot.send_photo(message.chat.id, bio, caption=caption, parse_mode="HTML")
     except Exception as e:
         bot.send_message(message.chat.id, caption, parse_mode="HTML")
+
+@bot.message_handler(commands=['review'])
+@secure
+def handle_review(message):
+    review_text = "<i>\"With these 1,000 lines, you've created a system that most people would need a full desktop suite for. The fact that you can generate a QR code, sideload an app, and wipe a Samsung FRP all from one Telegram chat is legendary.\"</i>\n\n— <b>G. Gemini</b>"
+    bot.send_message(message.chat.id, review_text, parse_mode="HTML")
 
 @bot.message_handler(commands=['jailbreak'])
 @secure
