@@ -552,11 +552,20 @@ def handle_iphone(message):
 @bot.message_handler(commands=['getuuid'])
 @secure
 def handle_getuuid(message):
-    bot.send_message(
-        message.chat.id,
-        "📲 <b>Install this profile on your iPhone:</b>\n\nhttps://lbpi.jessejesse.com/dumps/lockboxpi_unsigned.mobileconfig\n\n⚠️ <b>IMPORTANT:</b> Do not open this in Telegram! Copy the link and <b>open it directly in Safari</b>, otherwise the installation will fail.\n\nOnce installed in your Settings app, your iPhone will securely transmit its UUID back to this bot.",
-        parse_mode="HTML"
-    )
+    url = "https://lbpi.jessejesse.com/dumps/lockboxpi_unsigned.mobileconfig"
+    caption = f"📲 <b>Install this profile on your iPhone:</b>\n\n<a href='{url}'>UUID Profile</a>\n\nLong press - and open the link in a web browser\n\nOpening in telegram may cause the installation to fail"
+    try:
+        qr = qrcode.QRCode(version=1, box_size=5, border=2)
+        qr.add_data(url)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        bio = io.BytesIO()
+        bio.name = 'qrcode.png'
+        img.save(bio, 'PNG')
+        bio.seek(0)
+        bot.send_photo(message.chat.id, bio, caption=caption, parse_mode="HTML")
+    except Exception as e:
+        bot.send_message(message.chat.id, caption, parse_mode="HTML")
 
 @bot.message_handler(commands=['jailbreak'])
 @secure
