@@ -552,20 +552,11 @@ def handle_iphone(message):
 @bot.message_handler(commands=['getuuid'])
 @secure
 def handle_getuuid(message):
-    file_path = os.path.join(DUMPS_DIR, 'lockboxpi.mobileconfig')
-    if os.path.exists(file_path):
-        try:
-            with open(file_path, 'rb') as f:
-                bot.send_document(
-                    message.chat.id, 
-                    f, 
-                    caption="📲 <b>Install this profile on your iPhone.</b>\n\nOnce installed, your iPhone will securely transmit its UUID back to this bot.",
-                    parse_mode="HTML"
-                )
-        except Exception as e:
-            bot.reply_to(message, f"Error sending profile: {e}")
-    else:
-        bot.reply_to(message, "Enrollment profile not found in dumps.")
+    bot.send_message(
+        message.chat.id,
+        "📲 <b>Install this profile on your iPhone:</b>\n\nhttps://lbpi.jessejesse.com/dumps/lockboxpi.mobileconfig\n\nOnce installed, your iPhone will securely transmit its UUID back to this bot.",
+        parse_mode="HTML"
+    )
 
 @bot.message_handler(commands=['jailbreak'])
 @secure
