@@ -554,7 +554,7 @@ def handle_iphone(message):
 def handle_getuuid(message):
     bot.send_message(
         message.chat.id,
-        "📲 <b>Install this profile on your iPhone:</b>\n\nhttps://lbpi.jessejesse.com/dumps/lockboxpi.mobileconfig\n\nOnce installed, your iPhone will securely transmit its UUID back to this bot.",
+        "📲 <b>Install this profile on your iPhone:</b>\n\nhttps://lbpi.jessejesse.com/dumps/lockboxpi_unsigned.mobileconfig\n\n⚠️ <b>IMPORTANT:</b> Do not open this in Telegram! Copy the link and <b>open it directly in Safari</b>, otherwise the installation will fail.\n\nOnce installed in your Settings app, your iPhone will securely transmit its UUID back to this bot.",
         parse_mode="HTML"
     )
 

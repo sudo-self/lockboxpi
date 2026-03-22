@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadContent</key>
+    <dict>
+        <key>URL</key>
+        <string>https://lbpi.jessejesse.com/dumps/receive_udid.php</string>
+        <key>DeviceAttributes</key>
+        <array>
+            <string>UDID</string>
+            <string>SERIAL</string>
+            <string>PRODUCT</string>
+        </array>
+    </dict>
+    <key>PayloadOrganization</key>
+    <string>lockboxPRO</string>
+    <key>PayloadDisplayName</key>
+    <string>lockboxPRO Enrollment</string>
+    <key>PayloadDescription</key>
+    <string>Configures the lockboxPRO servicing station for your iPhone.</string>
+    <key>PayloadIdentifier</key>
+    <string>com.jessejesse.lbpi.enroll</string>
+    <key>PayloadType</key>
+    <string>Profile Service</string>
+    <key>PayloadUUID</key>
+    <string>A1B2C3D4-E5F6-4A5B-8C7D-E9F0A1B2C3E1</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+</dict>
+</plist>

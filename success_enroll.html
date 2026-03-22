@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>lockboxPRO Enrolled</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: #fff;
+            /* Trixie Background Logic */
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
+                        url('https://lbpi.jessejesse.com/dumps/trixie.gif');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            text-align: center;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 40px 20px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 90%;
+            width: 400px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            font-size: 16px;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        .btn {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 16px 32px;
+            background: #007aff;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 18px;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+            background: #0063ce;
+        }
+
+        .footer-note {
+            margin-top: 40px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Device Enrolled</h1>
+        <p>Your iPhone UDID has been successfully secured to <strong>lockboxPRO</strong>.</p>
+        
+        <a href="https://lbpi.jessejesse.com/dumps/webclip_unsigned.mobileconfig" class="btn">
+            Install Dashboard Web Clip
+        </a>
+
+        <div class="footer-note">
+            You can safely close this page after installing the web clip.
+        </div>
+    </div>
+
+</body>
+</html>
