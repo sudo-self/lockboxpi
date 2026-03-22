@@ -398,18 +398,36 @@ def handle_sendfile(message):
         except Exception as e: bot.reply_to(message, f"Error sending file: {e}")
     else: bot.reply_to(message, "File not found in dumps.")
 
-def remote_install(ipa_path):
-    udid = "00008140-001A0C5E1E06801C"
-    cmd = ["/home/lockboxpi/alt-server/AltServer-aarch64", "-u", udid, "-i", ipa_path]
-    env = os.environ.copy()
-    env["ALTSERVER_ANISETTE_SERVER"] = "http://127.0.0.1:6969"
+import threading
+
+def remote_install(ipa_path, chat_id):
+    script_path = "/home/lockboxpi/alt-server/sideload.sh"
+    cmd = [script_path, ipa_path]
+
     try:
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True, env=env)
-        return "🚀 IPA sent! Check your iPhone home screen."
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        photo_path = os.path.join(DUMPS_DIR, "photo_AgACAgEAAyEFAATc-fVDAAIDqmm_16reTAg7XPvyQPKPqLPyiQ9MAAIFDGsbB5cBRsISTtTpTS2KAQADAgADeQADOgQ.jpg")
+        try:
+            with open(photo_path, 'rb') as f:
+                bot.send_photo(chat_id, f)
+        except Exception as e:
+            pass # Suppress error if photo is missing
+            
     except subprocess.CalledProcessError as e:
-        return f"❌ Error installing IPA:\n{e.stderr or e.stdout}"
+        full_error = (e.stdout or "") + "\n" + (e.stderr or "")
+        fail_log = os.path.join(DUMPS_DIR, "sideloadfail.txt")
+        try:
+            with open(fail_log, 'a') as f:
+                f.write(f"--- Failed sideload for {ipa_path} ---\n{full_error}\n\n")
+        except Exception:
+            pass
     except Exception as e:
-        return f"❌ Error: {e}"
+        fail_log = os.path.join(DUMPS_DIR, "sideloadfail.txt")
+        try:
+            with open(fail_log, 'a') as f:
+                f.write(f"--- Unknown error for {ipa_path} ---\n{str(e)}\n\n")
+        except Exception:
+            pass
 
 @bot.message_handler(content_types=['document', 'photo', 'video', 'audio'])
 @secure
@@ -426,9 +444,8 @@ def handle_file_upload(message):
         with open(file_path, 'wb') as new_file: new_file.write(downloaded_file)
         
         if file_name.lower().endswith('.ipa'):
-            bot.reply_to(message, f"File '{file_name}' saved. Starting IPA installation...")
-            install_result = remote_install(file_path)
-            bot.reply_to(message, install_result)
+            bot.reply_to(message, f"File '{file_name}' saved. Starting IPA installation in background...")
+            threading.Thread(target=remote_install, args=(file_path, message.chat.id)).start()
         else:
             bot.reply_to(message, f"File '{file_name}' saved to dumps.")
     except Exception as e: bot.reply_to(message, f"Error saving file: {e}")
