@@ -179,6 +179,7 @@ def get_misc_menu():
         InlineKeyboardButton("Device ID Tool", callback_data="run_diagnostic"),
         InlineKeyboardButton("Samsung FRP", callback_data="run_samsung"),
         InlineKeyboardButton("Web USB", callback_data="run_usb"),
+        InlineKeyboardButton("AltStore", callback_data="prompt_altstore"),
         InlineKeyboardButton("Get UUID", callback_data="run_getuuid"),
         InlineKeyboardButton("iPhone", callback_data="run_iphone"),
         InlineKeyboardButton("Jailbreak", callback_data="run_jailbreak"),
@@ -693,6 +694,48 @@ def handle_usb_callbacks(call):
         bot.edit_message_text("https://webusb-chrome.vercel.app\n\n<b>*must be chrome browser</b>", call.message.chat.id, call.message.message_id, parse_mode="HTML")
 
 # --- UI Prompt Step Handlers ---
+import threading
+
+def trixie_provision(udid, ip, email, password, ipa_path, chat_id):
+    script_path = "/home/lockboxpi/alt-server/trixieload.sh"
+    cmd = [script_path, udid, ip, email, password, ipa_path]
+
+    try:
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        bot.send_message(chat_id, "✅ <b>Provisioning Complete!</b>", parse_mode="HTML")
+    except subprocess.CalledProcessError as e:
+        error_log = (e.stdout or "") + (e.stderr or "")
+        bot.send_message(
+            chat_id, 
+            f"❌ <b>TrixieLoad Failed</b>\n<pre>{html.escape(error_log[-500:])}</pre>", 
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        bot.send_message(chat_id, f"❌ <b>Error:</b> {e}", parse_mode="HTML")
+
+def process_altstore_ip(message):
+    udid = message.text.strip()
+    msg = bot.send_message(message.chat.id, "Enter iPhone IP Address (e.g., 100.112.95.19):")
+    bot.register_next_step_handler(msg, process_altstore_email, udid)
+
+def process_altstore_email(message, udid):
+    ip = message.text.strip()
+    msg = bot.send_message(message.chat.id, "Enter Apple ID Email:")
+    bot.register_next_step_handler(msg, process_altstore_password, udid, ip)
+
+def process_altstore_password(message, udid, ip):
+    email = message.text.strip()
+    msg = bot.send_message(message.chat.id, "Enter Apple ID Password:")
+    bot.register_next_step_handler(msg, process_altstore_execute, udid, ip, email)
+
+def process_altstore_execute(message, udid, ip, email):
+    password = message.text.strip()
+    ipa_name = "AltStore.ipa"
+    ipa_path = "/home/lockboxpi/alt-server/AltStore.ipa"
+    
+    bot.send_message(message.chat.id, f"🛠️ <b>Trixie is provisioning:</b> {ipa_name}\nTarget: {ip}", parse_mode="HTML")
+    threading.Thread(target=trixie_provision, args=(udid, ip, email, password, ipa_path, message.chat.id)).start()
+
 def process_terminal_step(message):
     if not message.text: return
     message.text = f"/terminal {message.text}"
@@ -783,6 +826,9 @@ def handle_ui_callbacks(call):
         elif cmd_name == "kick":
             msg = bot.send_message(call.message.chat.id, "Please provide the User ID to kick from the group:")
             bot.register_next_step_handler(msg, process_kick_step)
+        elif cmd_name == "altstore":
+            msg = bot.send_message(call.message.chat.id, "Please enter the iPhone UDID:")
+            bot.register_next_step_handler(msg, process_altstore_ip)
         return
 
     if data.startswith("run_"):
