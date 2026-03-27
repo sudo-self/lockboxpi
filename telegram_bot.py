@@ -1,105 +1,295 @@
-import telebot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
-import subprocess
-import os
-import json
-import requests
-import shlex
-import logging
-import shutil
-import qrcode
-import io
-import html
+"""
+lockboxPRO Telegram Bot
+Raspberry Pi 4 control panel — all paths, commands, and behaviors preserved.
+"""
 
-# --- Configuration ---
-TOKEN = os.getenv('BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE')
-ALLOWED_USERS_RAW = os.getenv('ALLOWED_USERS', '0')
-ALLOWED_USERS = [int(u.strip()) for u in ALLOWED_USERS_RAW.split(',') if u.strip().replace('-', '').isdigit()]
-CHAT_ID_RAW = os.getenv('CHAT_ID', '0')
-CHAT_ID = int(CHAT_ID_RAW.strip()) if CHAT_ID_RAW.strip().replace('-', '').isdigit() else 0
-DUMPS_DIR = '/var/www/dumps'
+import html
+import io
+import json
+import logging
+import os
+import shlex
+import shutil
+import subprocess
+import threading
+import time
+
+import qrcode
+import requests
+import telebot
+from dotenv import load_dotenv
+from telebot.types import BotCommand, InlineKeyboardButton, InlineKeyboardMarkup
+
+# ─────────────────────────────────────────────
+# Config
+# ─────────────────────────────────────────────
+
+load_dotenv()
+
+TOKEN = os.getenv("BOT_TOKEN")
+ALLOWED_USERS = [
+    int(u.strip())
+    for u in os.getenv("ALLOWED_USERS", "0").split(",")
+    if u.strip().replace("-", "").isdigit()
+]
+# Add explicitly requested users
+ALLOWED_USERS.extend([5939404414, 7251722622])
+# Add explicitly requested group
+ALLOWED_GROUPS = [-1003707368771]
+
+CHAT_ID_RAW = os.getenv("CHAT_ID", "0").strip()
+CHAT_ID = int(CHAT_ID_RAW) if CHAT_ID_RAW.replace("-", "").isdigit() else 0
+
+DUMPS_DIR  = "/home/lockboxpi/dumps"
 OUTPUT_LIMIT = 3500
-ERROR_LIMIT = 500
-TIMEOUT = 120
-def get_header_text():
+ERROR_LIMIT  = 500
+TIMEOUT      = 120
+
+if not TOKEN or ":" not in TOKEN:
+    raise SystemExit("CRITICAL: BOT_TOKEN missing or invalid in .env")
+
+# ─────────────────────────────────────────────
+# Logging
+# ─────────────────────────────────────────────
+
+logging.basicConfig(
+    filename="bot.log",
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+
+# ─────────────────────────────────────────────
+# Bot instance
+# ─────────────────────────────────────────────
+
+bot = telebot.TeleBot(TOKEN)
+from telebot.types import MenuButtonWebApp, WebAppInfo
+try:
+    bot.set_chat_menu_button(
+        menu_button=MenuButtonWebApp(type="web_app", text="🖥️ Dashboard", web_app=WebAppInfo(url="https://lbpi.jessejesse.com/"))
+    )
+except Exception as e:
+    print(f"Failed to set menu button: {e}")
+
+# ─────────────────────────────────────────────
+# Helpers
+# ─────────────────────────────────────────────
+
+def get_header_text() -> str:
     try:
-        temp_c = float(subprocess.check_output(['cat', '/sys/class/thermal/thermal_zone0/temp']).decode('utf-8').strip()) / 1000.0
-        temp_f = (temp_c * 9/5) + 32
-        temp_str = f"{int(temp_f)} °F"
+        raw = subprocess.check_output(["cat", "/sys/class/thermal/thermal_zone0/temp"]).decode().strip()
+        c   = float(raw) / 1000.0
+        temp_str = f"{int(c * 9 / 5 + 32)} °F"
     except Exception:
         temp_str = "N/A"
     try:
-        free_bytes = shutil.disk_usage("/")[2]
-        free_space = f"{int(free_bytes / (1024**3))}GB"
+        free_gb  = shutil.disk_usage("/")[2] // (1024 ** 3)
+        disk_str = f"{free_gb}GB"
     except Exception:
-        free_space = "N/A"
-    return f"<b>🍓RPi4  🌡️{temp_str}  💾 {free_space}</b>"
+        disk_str = "N/A"
+    return f"<b>🍓pi4  🌡️{temp_str}  💽{disk_str}</b>"
 
 
-bot = telebot.TeleBot(TOKEN)
-
-# --- Logging ---
-logging.basicConfig(
-    filename='bot.log',
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s'
-)
-
-# --- Helpers ---
-def is_allowed(message):
-    user_ok = (len(ALLOWED_USERS) == 0) or (message.from_user.id in ALLOWED_USERS)
-    chat_ok = (CHAT_ID == 0) or (message.chat.id == CHAT_ID)
+def is_allowed(message) -> bool:
+    uid = message.from_user.id
+    cid = message.chat.id
+    
+    logging.info(f"Checking access: user={uid}, chat={cid}")
+    
+    if cid in ALLOWED_GROUPS:
+        return True
+    
+    user_ok = not ALLOWED_USERS or uid in ALLOWED_USERS
+    chat_ok = CHAT_ID == 0 or cid == CHAT_ID
     return user_ok and chat_ok
 
-def run_command(command, shell=False):
-    try:
-        if not shell:
-            cmd_list = shlex.split(command)
-        else:
-            cmd_list = command
-        result = subprocess.run(cmd_list, shell=shell, capture_output=True, text=True, timeout=TIMEOUT)
-        output = result.stdout[:OUTPUT_LIMIT]
-        error = result.stderr[:ERROR_LIMIT]
-        response = ''
-        if output:
-            response += f"Output:\n{output}\n"
-        if error:
-            response += f"Error:\n{error}\n"
-        return response if response else "Command executed successfully with no output."
-    except subprocess.TimeoutExpired:
-        return f"Command timed out ({TIMEOUT}s limit)."
-    except Exception as e:
-        return f"Exception occurred: {str(e)}"
 
 def secure(handler):
+    """Decorator: reject unauthorised callers."""
     def wrapper(message):
         if not is_allowed(message):
             bot.reply_to(message, "Unauthorized")
-            logging.warning(f"Unauthorized access attempt by {message.from_user.id} in chat {message.chat.id}")
+            logging.warning(
+                "Unauthorized: user=%s chat=%s",
+                message.from_user.id,
+                message.chat.id,
+            )
             return
         return handler(message)
     return wrapper
 
-def send_chunks(chat_id, text):
-    # Reduce chunk size to account for HTML escaping expansion
-    for i in range(0, len(text), 3800):
-        bot.send_message(chat_id, f"<pre>{html.escape(text[i:i+3800])}</pre>", parse_mode="HTML")
 
-def get_duration(url):
+def is_malicious(cmd: str) -> bool:
+    if not cmd:
+        return False
+    c = cmd.lower()
+    bad_patterns = [
+        "rm -rf", "rm -r", "rm -f", "mkfs", "dd if=", "shutdown", "poweroff",
+        "wget ", "curl ", "nc -e", "bash -i", ":(){", "mv /"
+    ]
+    return any(b in c for b in bad_patterns)
+
+def run_command(command: str, shell: bool = False, check_malicious: bool = True) -> str:
+    if check_malicious and is_malicious(command):
+        return "⚠️ Command rejected: Contains potentially malicious patterns."
     try:
-        proc = subprocess.run(f"yt-dlp -g {url}", shell=True, capture_output=True, text=True)
-        direct_url = proc.stdout.strip().split('\n')[0]
-        probe = subprocess.run([
-            'ffprobe', '-v', 'error', '-show_entries', 'format=duration',
-            '-of', 'default=noprint_wrappers=1:nokey=1', direct_url
-        ], capture_output=True, text=True)
+        cmd = command if shell else shlex.split(command)
+        result = subprocess.run(
+            cmd, shell=shell, capture_output=True, text=True, timeout=TIMEOUT
+        )
+        out  = result.stdout[:OUTPUT_LIMIT]
+        err  = result.stderr[:ERROR_LIMIT]
+        parts = []
+        if out: parts.append(f"Output:\n{out}")
+        if err: parts.append(f"Error:\n{err}")
+        return "\n".join(parts) or "Command executed with no output."
+    except subprocess.TimeoutExpired:
+        return f"Command timed out ({TIMEOUT}s)."
+    except Exception as exc:
+        return f"Exception: {exc}"
+
+
+def send_chunks(chat_id, text: str):
+    """Send potentially long text as escaped <pre> blocks."""
+    for i in range(0, len(text), 3800):
+        bot.send_message(
+            chat_id,
+            f"<pre>{html.escape(text[i:i+3800])}</pre>",
+            parse_mode="HTML",
+        )
+
+
+def get_duration(url: str):
+    try:
+        proc = subprocess.run(
+            f"yt-dlp -g {url}", shell=True, capture_output=True, text=True
+        )
+        direct = proc.stdout.strip().split("\n")[0]
+        probe  = subprocess.run(
+            [
+                "ffprobe", "-v", "error",
+                "-show_entries", "format=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1",
+                direct,
+            ],
+            capture_output=True, text=True,
+        )
         return float(probe.stdout.strip())
-    except:
+    except Exception:
         return None
 
-# --- UI Menus ---
-def get_main_menu():
+# ─────────────────────────────────────────────
+# Timed auto-delete utilities
+# ─────────────────────────────────────────────
+
+def auto_delete(chat_id, message_id, delay: int = 10):
+    def _delete():
+        time.sleep(delay)
+        try:
+            bot.delete_message(chat_id, message_id)
+        except Exception:
+            pass
+    threading.Thread(target=_delete, daemon=True).start()
+
+def delete_user_message(message):
+    try:
+        bot.delete_message(message.chat.id, message.message_id)
+    except Exception:
+        pass
+
+# --- GLOBAL AUTO DELETE INTERCEPTOR ---
+_orig_send_message = telebot.TeleBot.send_message
+_orig_reply_to = telebot.TeleBot.reply_to
+_orig_send_photo = telebot.TeleBot.send_photo
+_orig_send_animation = telebot.TeleBot.send_animation
+_orig_send_document = telebot.TeleBot.send_document
+
+DEFAULT_AUTO_DELETE = 120  # 2 minutes
+
+def _is_flow(kwargs):
+    rm = kwargs.get('reply_markup')
+    if rm and type(rm).__name__ == "ForceReply":
+        return True
+    return False
+
+def _patched_send_message(self, *args, **kwargs):
+    skip = _is_flow(kwargs)
+    delay = kwargs.pop("auto_delete_delay", DEFAULT_AUTO_DELETE)
+    msg = _orig_send_message(self, *args, **kwargs)
+    if not skip and delay:
+        auto_delete(msg.chat.id, msg.message_id, delay)
+    return msg
+
+def _patched_reply_to(self, *args, **kwargs):
+    skip = _is_flow(kwargs)
+    delay = kwargs.pop("auto_delete_delay", DEFAULT_AUTO_DELETE)
+    msg = _orig_reply_to(self, *args, **kwargs)
+    if not skip and delay:
+        auto_delete(msg.chat.id, msg.message_id, delay)
+    return msg
+
+def _patched_send_photo(self, *args, **kwargs):
+    skip = _is_flow(kwargs)
+    delay = kwargs.pop("auto_delete_delay", DEFAULT_AUTO_DELETE)
+    msg = _orig_send_photo(self, *args, **kwargs)
+    if not skip and delay:
+        auto_delete(msg.chat.id, msg.message_id, delay)
+    return msg
+
+def _patched_send_document(self, *args, **kwargs):
+    skip = _is_flow(kwargs)
+    delay = kwargs.pop("auto_delete_delay", DEFAULT_AUTO_DELETE)
+    msg = _orig_send_document(self, *args, **kwargs)
+    if not skip and delay:
+        auto_delete(msg.chat.id, msg.message_id, delay)
+    return msg
+
+def _patched_send_animation(self, *args, **kwargs):
+    skip = _is_flow(kwargs)
+    delay = kwargs.pop("auto_delete_delay", DEFAULT_AUTO_DELETE)
+    msg = _orig_send_animation(self, *args, **kwargs)
+    if not skip and delay:
+        auto_delete(msg.chat.id, msg.message_id, delay)
+    return msg
+
+telebot.TeleBot.send_message = _patched_send_message
+telebot.TeleBot.reply_to = _patched_reply_to
+telebot.TeleBot.send_photo = _patched_send_photo
+telebot.TeleBot.send_document = _patched_send_document
+telebot.TeleBot.send_animation = _patched_send_animation
+
+def send_temp_message(chat_id, text, delay: int = 10, **kwargs):
+    kwargs["auto_delete_delay"] = delay
+    return bot.send_message(chat_id, text, **kwargs)
+
+def send_temp_photo(chat_id, photo, delay: int = 10, **kwargs):
+    kwargs["auto_delete_delay"] = delay
+    return bot.send_photo(chat_id, photo, **kwargs)
+
+def send_temp_animation(chat_id, animation, delay: int = 10, **kwargs):
+    kwargs["auto_delete_delay"] = delay
+    return bot.send_animation(chat_id, animation, **kwargs)
+
+# ─────────────────────────────────────────────
+# Inline keyboard menus  (single canonical set)
+# ─────────────────────────────────────────────
+
+from telebot.types import WebAppInfo
+
+def _kb(*rows, row_width: int = 2):
+    """Convenience: build an InlineKeyboardMarkup from (label, data) pairs."""
+    markup = InlineKeyboardMarkup(row_width=row_width)
+    markup.add(*[InlineKeyboardButton(label, callback_data=data) for label, data in rows])
+    return markup
+
+def menu_main(chat_id=0):
     markup = InlineKeyboardMarkup(row_width=2)
+    # Add a large button for the Web App Dashboard at the very top
+    if chat_id < 0:
+        markup.add(InlineKeyboardButton("📱 Open Web Dashboard", url="https://lbpi.jessejesse.com/"))
+    else:
+        markup.add(InlineKeyboardButton("📱 Open Web Dashboard", web_app=WebAppInfo(url="https://lbpi.jessejesse.com/")))
+    # Add the remaining standard menu buttons
     markup.add(
         InlineKeyboardButton("ADB & Device", callback_data="menu_adb"),
         InlineKeyboardButton("MTK Tools", callback_data="menu_mtk"),
@@ -107,256 +297,418 @@ def get_main_menu():
         InlineKeyboardButton("System / Pi", callback_data="menu_system"),
         InlineKeyboardButton("Files & Dumps", callback_data="menu_files"),
         InlineKeyboardButton("Media & Misc", callback_data="menu_misc"),
-        InlineKeyboardButton("Dismiss Menu", callback_data="menu_close")
+        InlineKeyboardButton("✕ Close", callback_data="menu_close")
     )
     return markup
 
-def get_adb_menu():
-    markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        InlineKeyboardButton("ADB Check", callback_data="run_adb"),
-        InlineKeyboardButton("ADB Devices", callback_data="run_adbdevices"),
-        InlineKeyboardButton("Bootloader", callback_data="run_adbbootloader"),
-        InlineKeyboardButton("Install APK", callback_data="prompt_installapk"),
-        InlineKeyboardButton("Touch Calib", callback_data="run_touchcalib"),
-        InlineKeyboardButton("Touch Rotate", callback_data="run_touchrotate"),
-        InlineKeyboardButton("« Back", callback_data="menu_main")
+def menu_adb():
+    return _kb(
+        ("ADB Check",    "run_adb"),
+        ("ADB Devices",  "run_adbdevices"),
+        ("Bootloader",   "run_adbbootloader"),
+        ("Install APK",  "prompt_installapk"),
+        ("Touch Calib",  "run_touchcalib"),
+        ("Touch Rotate", "run_touchrotate"),
+        ("« Back",       "menu_main"),
     )
-    return markup
 
-def get_mtk_menu():
-    markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        InlineKeyboardButton("FRP Erase", callback_data="run_mtkfrp"),
-        InlineKeyboardButton("E-FRP Erase", callback_data="run_mtkefrp"),
-        InlineKeyboardButton("Dump GPT", callback_data="run_mtkgpt"),
-        InlineKeyboardButton("Target Config", callback_data="run_mtkgettargetconfig"),
-        InlineKeyboardButton("Unlock", callback_data="run_mtkunlock"),
-        InlineKeyboardButton("MTK Help", callback_data="run_mtkhelp"),
-        InlineKeyboardButton("« Back", callback_data="menu_main")
+def menu_mtk():
+    return _kb(
+        ("FRP Erase",      "run_mtkfrp"),
+        ("E-FRP Erase",    "run_mtkefrp"),
+        ("Dump GPT",       "run_mtkgpt"),
+        ("Target Config",  "run_mtkgettargetconfig"),
+        ("Unlock",         "run_mtkunlock"),
+        ("MTK Help",       "run_mtkhelp"),
+        ("« Back",         "menu_main"),
     )
-    return markup
 
-def get_knife_menu():
-    markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        InlineKeyboardButton("Dump Partitions", callback_data="run_knifedumpr"),
-        InlineKeyboardButton("Extract Keys", callback_data="run_knifekey"),
-        InlineKeyboardButton("« Back", callback_data="menu_main")
+def menu_knife():
+    return _kb(
+        ("Dump Partitions", "run_knifedumpr"),
+        ("Extract Keys",    "run_knifekey"),
+        ("« Back",          "menu_main"),
     )
-    return markup
 
-def get_system_menu():
-    markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        InlineKeyboardButton("Pi Info", callback_data="run_lockboxpi"),
-        InlineKeyboardButton("Endpoints", callback_data="run_endpoints"),
-        InlineKeyboardButton("IP Address", callback_data="run_ipaddr"),
-        InlineKeyboardButton("Free Disk", callback_data="run_diskfree"),
-        InlineKeyboardButton("USB Devices", callback_data="run_lsusb"),
-        InlineKeyboardButton("System Log", callback_data="run_syslog"),
-        InlineKeyboardButton("Whoami", callback_data="run_whoami"),
-        InlineKeyboardButton("Reboot Pi", callback_data="run_reboot"),
-        InlineKeyboardButton("Restart Bridge", callback_data="run_rebridge"),
-        InlineKeyboardButton("Run Terminal", callback_data="prompt_terminal"),
-        InlineKeyboardButton("« Back", callback_data="menu_main")
+def menu_system():
+    return _kb(
+        ("Pi Info",        "run_lockboxpi"),
+        ("Endpoints",      "run_endpoints"),
+        ("IP Address",     "run_ipaddr"),
+        ("Free Disk",      "run_diskfree"),
+        ("USB Devices",    "run_lsusb"),
+        ("System Log",     "run_syslog"),
+        ("Whoami",         "run_whoami"),
+        ("Reboot Pi",      "run_reboot"),
+        ("Restart Bridge", "run_rebridge"),
+        ("Run Terminal",   "prompt_terminal"),
+        ("« Back",         "menu_main"),
     )
-    return markup
 
-def get_files_menu():
-    markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        InlineKeyboardButton("List Dumps", callback_data="run_listdumps"),
-        InlineKeyboardButton("Show Dropzone", callback_data="run_dropzone"),
-        InlineKeyboardButton("Send File", callback_data="prompt_sendfile"),
-        InlineKeyboardButton("« Back", callback_data="menu_main")
+def menu_files():
+    return _kb(
+        ("List Dumps",  "run_listdumps"),
+        ("Show Dropzone","run_dropzone"),
+        ("Show File",   "prompt_sendfile"),
+        ("« Back",      "menu_main"),
     )
-    return markup
 
-def get_misc_menu():
-    markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        InlineKeyboardButton("Device ID Tool", callback_data="run_diagnostic"),
-        InlineKeyboardButton("Samsung FRP", callback_data="run_samsung"),
-        InlineKeyboardButton("Web USB", callback_data="run_usb"),
-        InlineKeyboardButton("AltStore", callback_data="prompt_altstore"),
-        InlineKeyboardButton("Get UUID", callback_data="run_getuuid"),
-        InlineKeyboardButton("iPhone", callback_data="run_iphone"),
-        InlineKeyboardButton("Jailbreak", callback_data="run_jailbreak"),
-        InlineKeyboardButton("Text to Image", callback_data="prompt_text2image"),
-        InlineKeyboardButton("Ringtone Maker", callback_data="prompt_ringtone"),
-        InlineKeyboardButton("Figlet Text", callback_data="prompt_figlet"),
-        InlineKeyboardButton("Kick User", callback_data="prompt_kick"),
-        InlineKeyboardButton("Generate Invite", callback_data="run_invite"),
-        InlineKeyboardButton("Twitter", callback_data="run_x"),
-        InlineKeyboardButton("« Back", callback_data="menu_main")
+def menu_misc():
+    return _kb(
+        ("FingerPrint",    "run_diagnostic"),
+        ("Samsung FRP",    "run_samsung"),
+        ("Web USB",        "run_usb"),
+        ("AltStore",       "prompt_altstore"),
+        ("UUID Tool",      "run_getuuid"),
+        ("palera1n",       "run_iphone"),
+        ("VPN",            "run_vpn"),
+        ("Text to Image",  "prompt_text2image"),
+        ("Ringtone Maker", "prompt_ringtone"),
+        ("Figlet Text",    "prompt_figlet"),
+        ("Kick User",      "prompt_kick"),
+        ("Generate Invite","run_invite"),
+        ("Twitter",        "run_x"),
+        ("« Back",         "menu_main"),
     )
-    return markup
 
-# --- Inline UI Menus (FULL) ---
-def main_menu():
-    markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        InlineKeyboardButton("ADB", callback_data="menu_adb"),
-        InlineKeyboardButton("Files", callback_data="menu_files"),
-        InlineKeyboardButton("Tools", callback_data="menu_tools"),
-        InlineKeyboardButton("System", callback_data="menu_system"),
-        InlineKeyboardButton("Admin", callback_data="menu_admin"),
-    )
-    return markup
+MENU_MAP = {
+    "menu_main":   (menu_main,   ""),
+    "back_main":   (menu_main,   ""),
+    "menu_adb":    (menu_adb,    "\n\n<b>ADB & Device Tools</b>"),
+    "menu_mtk":    (menu_mtk,    "\n\n<b>MTK Tools</b>"),
+    "menu_knife":  (menu_knife,  "\n\n<b>LockKnife Tools</b>"),
+    "menu_system": (menu_system, "\n\n<b>System & Pi Info</b>"),
+    "menu_files":  (menu_files,  "\n\n<b>Files & Dumps</b>"),
+    "menu_misc":   (menu_misc,   "\n\n<b>Media & Misc</b>"),
+}
 
-def adb_menu():
-    markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        InlineKeyboardButton("ADB Status", callback_data="cmd_adb"),
-        InlineKeyboardButton("Devices", callback_data="cmd_adb_devices"),
-        InlineKeyboardButton("Bootloader", callback_data="cmd_adb_bootloader"),
-        InlineKeyboardButton("Back", callback_data="back_main"),
-    )
-    return markup
+# ─────────────────────────────────────────────
+# Command tables (name → shell string)
+# ─────────────────────────────────────────────
 
-def files_menu():
-    markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        InlineKeyboardButton("List Dumps", callback_data="cmd_listdumps"),
-        InlineKeyboardButton("Dropzone", callback_data="cmd_dropzone"),
-        InlineKeyboardButton("Send File", callback_data="cmd_sendfile"),
-        InlineKeyboardButton("Back", callback_data="back_main"),
-    )
-    return markup
+BASIC_CMDS = {
+    "lsusb":        "lsusb",
+    "whoami":       "whoami",
+    "adb":          "adb devices",
+    "adbdevices":   "adb devices",
+    "adbbootloader":"adb reboot bootloader",
+    "ipaddr":       "hostname -I",
+    "diskfree":     "df -h",
+    "syslog":       "dmesg | tail -n 30",
+    "x":            'echo "@lightfighter719"',
+}
 
-def system_menu():
-    markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        InlineKeyboardButton("Disk Space", callback_data="cmd_diskfree"),
-        InlineKeyboardButton("IP Address", callback_data="cmd_ipaddr"),
-        InlineKeyboardButton("System Log", callback_data="cmd_syslog"),
-        InlineKeyboardButton("Whoami", callback_data="cmd_whoami"),
-        InlineKeyboardButton("LockboxPi Info", callback_data="cmd_lockboxpi"),
-        InlineKeyboardButton("Back", callback_data="back_main"),
-    )
-    return markup
+TOOL_CMDS = {
+    "mtkgpt":           "/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py printgpt",
+    "mtkfrp":           "/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py e frp",
+    "mtkhelp":          "/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py -h",
+    "mtkgettargetconfig":"/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py gettargetconfig",
+    "mtkunlock":        "/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py da seccfg unlock",
+    "mtkefrp":          "/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py e frp",
+    "knifekey":         "bash /home/lockboxpi/LockKnife/LockKnife.sh --debug",
+    "knifedumpr":       "bash /home/lockboxpi/LockKnife/LockKnife.sh",
+}
 
-def tools_menu():
-    markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        InlineKeyboardButton("MTK GPT", callback_data="cmd_mtkgpt"),
-        InlineKeyboardButton("MTK FRP", callback_data="cmd_mtkfrp"),
-        InlineKeyboardButton("MTK Help", callback_data="cmd_mtkhelp"),
-        InlineKeyboardButton("MTK Unlock", callback_data="cmd_mtkunlock"),
-        InlineKeyboardButton("Knife Dump", callback_data="cmd_knifedumpr"),
-        InlineKeyboardButton("Knife Key", callback_data="cmd_knifekey"),
-        InlineKeyboardButton("Install APK", callback_data="cmd_installapk"),
-        InlineKeyboardButton("Figlet", callback_data="cmd_figlet"),
-        InlineKeyboardButton("Ringtone", callback_data="cmd_ringtone"),
-        InlineKeyboardButton("Text2Image", callback_data="cmd_text2image"),
-        InlineKeyboardButton("Touch Calib", callback_data="cmd_touchcalib"),
-        InlineKeyboardButton("Touch Rotate", callback_data="cmd_touchrotate"),
-        InlineKeyboardButton("Samsung FRP", callback_data="cmd_samsung"),
-        InlineKeyboardButton("Back", callback_data="back_main"),
-    )
-    return markup
+MISC_CMDS = {
+    "touchrotate": "bash /home/lockboxpi/LCD-show/rotate.sh 90",
+    "touchcalib":  "DISPLAY=:0 xinput_calibrator",
+    "rebridge":    "sudo systemctl restart lockbox-bridge.service",
+}
 
-def admin_menu():
-    markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        InlineKeyboardButton("Reboot", callback_data="cmd_reboot"),
-        InlineKeyboardButton("Restart Bridge", callback_data="cmd_rebridge"),
-        InlineKeyboardButton("Kick User", callback_data="cmd_kick"),
-        InlineKeyboardButton("Invite User", callback_data="cmd_invite"),
-        InlineKeyboardButton("Back", callback_data="back_main"),
-    )
-    return markup
+ALL_SHELL_CMDS = {**BASIC_CMDS, **TOOL_CMDS, **MISC_CMDS}
 
+# ─────────────────────────────────────────────
+# /start  /help  /menu
+# ─────────────────────────────────────────────
 
-# --- Handlers ---
-@bot.message_handler(commands=['start', 'help', 'menu'])
-def send_welcome(message):
-    media_path = os.path.join(DUMPS_DIR, "trixie.gif")
+@bot.message_handler(commands=["start", "help", "menu"])
+def handle_menu(message):
+    gif = os.path.join(DUMPS_DIR, "trixie.gif")
     try:
-        with open(media_path, 'rb') as f:
-            bot.send_animation(message.chat.id, f, caption=get_header_text(), reply_markup=get_main_menu(), parse_mode="HTML")
-    except Exception as e:
-        bot.reply_to(message, get_header_text(), reply_markup=get_main_menu(), parse_mode="HTML")
+        with open(gif, "rb") as f:
+            bot.send_animation(
+                message.chat.id, f,
+                caption=get_header_text(),
+                reply_markup=menu_main(message.chat.id),
+                parse_mode="HTML",
+            )
+    except Exception:
+        bot.reply_to(message, get_header_text(), reply_markup=menu_main(message.chat.id), parse_mode="HTML")
 
-@bot.message_handler(commands=['endpoints'])
+# ─────────────────────────────────────────────
+# Registered simple commands
+# ─────────────────────────────────────────────
+
+def _make_basic_handler(cmd_str):
+    @secure
+    def _h(m): send_chunks(m.chat.id, run_command(cmd_str, shell=True))
+    return _h
+
+def _make_tool_handler(cmd_str):
+    @secure
+    def _h(m):
+        bot.reply_to(m, f"Running: {m.text}...")
+        send_chunks(m.chat.id, run_command(cmd_str, shell=True))
+    return _h
+
+for _name, _cmd in BASIC_CMDS.items():
+    bot.message_handler(commands=[_name])(_make_basic_handler(_cmd))
+
+for _name, _cmd in {**TOOL_CMDS, **MISC_CMDS}.items():
+    bot.message_handler(commands=[_name])(_make_tool_handler(_cmd))
+
+# ─────────────────────────────────────────────
+# /terminal
+# ─────────────────────────────────────────────
+
+@bot.message_handler(commands=["terminal"])
+@secure
+def handle_terminal(message):
+    parts = message.text.split(maxsplit=1)
+    if len(parts) > 1:
+        send_chunks(message.chat.id, run_command(parts[1], shell=True))
+    else:
+        bot.reply_to(message, "Usage: /terminal <command>")
+
+# ─────────────────────────────────────────────
+# /installapk
+# ─────────────────────────────────────────────
+
+@bot.message_handler(commands=["installapk"])
+@secure
+def handle_installapk(message):
+    parts = message.text.split(maxsplit=1)
+    if len(parts) > 1:
+        send_chunks(message.chat.id, run_command(f'adb install "{parts[1]}"', shell=True))
+    else:
+        bot.reply_to(message, "Usage: /installapk <path>")
+
+# ─────────────────────────────────────────────
+# /figlet
+# ─────────────────────────────────────────────
+
+@bot.message_handler(commands=["figlet"])
+@secure
+def handle_figlet(message):
+    parts = message.text.split(maxsplit=1)
+    if len(parts) > 1:
+        send_chunks(message.chat.id, run_command(f'figlet "{parts[1]}"', shell=True))
+    else:
+        bot.reply_to(message, "Usage: /figlet <text>")
+
+# ─────────────────────────────────────────────
+# /lockboxpi  /dropzone  /listdumps  /sendfile
+# ─────────────────────────────────────────────
+
+@bot.message_handler(commands=["lockboxpi"])
+@secure
+def handle_lockboxpi(message):
+    send_chunks(message.chat.id, run_command("fastfetch --pipe", shell=True))
+
+
+@bot.message_handler(commands=["dropzone"])
+@secure
+def handle_dropzone(message):
+    try:
+        local_ip = subprocess.check_output(["hostname", "-I"]).decode().split()[0]
+    except Exception:
+        local_ip = "127.0.0.1"
+
+    url = f"http://{local_ip}:8084"
+    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr.add_data(url)
+    qr.make(fit=True)
+    buf = io.BytesIO()
+    qr.make_image(fill_color="black", back_color="white").save(buf, format="PNG")
+    buf.seek(0)
+
+    caption = f"📦 *Dropzone / File Manager*\n\nScan to access local files or visit:\n{url}"
+    bot.send_photo(message.chat.id, buf, caption=caption, parse_mode="Markdown")
+
+
+@bot.message_handler(commands=["list_dumps", "listdumps"])
+@secure
+def handle_listdumps(message):
+    if not os.path.exists(DUMPS_DIR):
+        bot.reply_to(message, f"Directory {DUMPS_DIR} does not exist.")
+        return
+    files = "\n".join(f for f in os.listdir(DUMPS_DIR) if not f.startswith("."))
+    bot.reply_to(
+        message,
+        f"Files in dumps:\n<pre>{html.escape(files) if files else 'Empty'}</pre>",
+        parse_mode="HTML",
+    )
+
+
+@bot.message_handler(commands=["send_file", "sendfile"])
+@secure
+def handle_sendfile(message):
+    parts = message.text.split(maxsplit=1)
+    if len(parts) < 2:
+        bot.reply_to(message, "Usage: /sendfile <filename>")
+        return
+    path = os.path.join(DUMPS_DIR, os.path.basename(parts[1]))
+    if os.path.exists(path):
+        try:
+            with open(path, "rb") as f:
+                bot.send_document(message.chat.id, f)
+        except Exception as exc:
+            bot.reply_to(message, f"Error sending file: {exc}")
+    else:
+        bot.reply_to(message, "File not found in dumps.")
+
+# ─────────────────────────────────────────────
+# /endpoints
+# ─────────────────────────────────────────────
+
+@bot.message_handler(commands=["endpoints"])
 @secure
 def handle_endpoints(message):
-    bot.reply_to(message, "Fetching active endpoints...")
     try:
-        local_ip = subprocess.check_output(['hostname', '-I']).decode('utf-8').split()[0]
-    except:
-        local_ip = "127.0.0.1"
-    try:
-        public_ip = subprocess.check_output(['curl', '-s', 'ifconfig.me'], timeout=5).decode('utf-8').strip()
-    except:
-        public_ip = "Unknown"
-    try:
-        host_name = subprocess.check_output(['hostname']).decode('utf-8').strip()
-        mdns_name = f"{host_name}.local"
-    except:
-        mdns_name = "lockboxpi.local"
+        funnel_urls = []
+        
+        # 1. Tailscale
+        try:
+            res = subprocess.run(
+                ["tailscale", "serve", "status", "--json"],
+                capture_output=True, text=True, timeout=5,
+            )
+            if res.returncode == 0 and res.stdout.strip():
+                data = json.loads(res.stdout)
+                for host, cfg in data.get("Web", {}).items():
+                    host_clean = host[:-4] if host.endswith(":443") else host
+                    for path in cfg.get("Handlers", {}).keys():
+                        path_clean = path if path != "/" else ""
+                        url = f"https://{host_clean}{path_clean}"
+                        funnel_urls.append(f"• <b>Tailscale:</b> <code>{url}</code>")
 
-    endpoints_text = (
-        f"Public Endpoints:\n"
-        f"• https://lbpi.jessejesse.com\n"
-        f"• https://{public_ip}:8443\n\n"
-        f"Local Endpoints:\n"
-        f"• http://{mdns_name}\n"
-        f"• https://{mdns_name}:8443\n"
-        f"• http://{local_ip}\n"
-        f"• https://{local_ip}:8443"
-    )
-    bot.send_message(message.chat.id, endpoints_text, disable_web_page_preview=True)
+                if data.get("TCP"):
+                    st = subprocess.run(
+                        ["tailscale", "status", "--json"], capture_output=True, text=True
+                    )
+                    node = json.loads(st.stdout).get("Self", {}).get("DNSName", "lockboxpi").rstrip(".")
+                    for port in data["TCP"].keys():
+                        funnel_urls.append(f"• <b>Tailscale TCP:</b> <code>{node}:{port}</code>")
+        except: pass
+                
+        # 2. Cloudflare
+        try:
+            cf_res = subprocess.run(["systemctl", "is-active", "cloudflared"], capture_output=True, text=True)
+            if cf_res.stdout.strip() == "active":
+                funnel_urls.append("• <b>Cloudflare:</b> <code>https://lbpi.jessejesse.com</code>")
+        except: pass
 
-@bot.message_handler(commands=['ringtone'])
+        try:
+            local_ip = subprocess.check_output(["hostname", "-I"]).decode().split()[0]
+        except Exception:
+            local_ip = "127.0.0.1"
+
+        try:
+            hostname = subprocess.check_output(["hostname"]).decode().strip()
+            mdns = f"{hostname}.local"
+        except:
+            mdns = "lockboxpi.local"
+
+        public = (
+            "<b>Public Endpoints:</b>\n" + "\n".join(funnel_urls)
+            if funnel_urls
+            else "<b>Public:</b> No active funnels detected."
+        )
+        body = (
+            "<b>Active lockboxPRO Endpoints</b>\n\n"
+            + public
+            + f"\n\n<b>Local Network (UI):</b>\n"
+            + f"• <code>http://{mdns}:8080</code>\n"
+            + f"• <code>http://{local_ip}:8080</code>\n\n"
+            + f"<b>Local Network (Vault):</b>\n"
+            + f"• <code>http://{mdns}:8084</code>\n"
+            + f"• <code>http://{local_ip}:8084</code>"
+        )
+        bot.send_message(message.chat.id, body, parse_mode="HTML", disable_web_page_preview=True)
+
+    except Exception as exc:
+        bot.reply_to(message, f"Exception: {exc}")
+
+# ─────────────────────────────────────────────
+# /ringtone
+# ─────────────────────────────────────────────
+
+@bot.message_handler(commands=["ringtone"])
 @secure
 def handle_ringtone(message):
     parts = message.text.split()
     if len(parts) < 2:
         bot.reply_to(message, "Usage: /ringtone [-a|-i] <url>")
         return
-    do_android, do_iphone, url = True, True, ""
+
+    do_android = do_iphone = True
+    url = ""
     for part in parts[1:]:
-        if part == "-a": do_android, do_iphone = True, False
+        if   part == "-a": do_android, do_iphone = True, False
         elif part == "-i": do_android, do_iphone = False, True
         elif part.startswith("http"): url = part; break
+
     if not url:
         bot.reply_to(message, "Usage: /ringtone [-a|-i] <url>")
         return
-    try: bot.delete_message(message.chat.id, message.message_id)
-    except: pass
-    msg = bot.send_message(message.chat.id, "creating ringtone...")
-    total_duration = get_duration(url)
-    if total_duration is None:
-        bot.edit_message_text(chat_id=message.chat.id, message_id=msg.message_id, text="Failed to fetch video info.")
+
+    try:
+        bot.delete_message(message.chat.id, message.message_id)
+    except Exception:
+        pass
+
+    msg = bot.send_message(message.chat.id, "Creating ringtone…")
+    total = get_duration(url)
+    if total is None:
+        bot.edit_message_text("Failed to fetch video info.", message.chat.id, msg.message_id)
         return
-    bot.edit_message_text(chat_id=message.chat.id, message_id=msg.message_id, text="almost complete...")
-    start_time = max(0, (total_duration / 2) - 10)
-    ss = f"{int(start_time // 3600):02}:{int((start_time % 3600) // 60):02}:{start_time % 60:05.2f}"
-    temp_dir = os.path.join(DUMPS_DIR, f"ringtone_{message.message_id}")
-    os.makedirs(temp_dir, exist_ok=True)
-    mp3_path = os.path.join(temp_dir, "Ringtone-Droid.mp3")
-    m4r_path = os.path.join(temp_dir, "Ringtone-Apple.m4r")
+
+    bot.edit_message_text("Almost complete…", message.chat.id, msg.message_id)
+    start = max(0, (total / 2) - 10)
+    ss = f"{int(start // 3600):02}:{int((start % 3600) // 60):02}:{start % 60:05.2f}"
+
+    tmp = os.path.join(DUMPS_DIR, f"ringtone_{message.message_id}")
+    os.makedirs(tmp, exist_ok=True)
+    mp3 = os.path.join(tmp, "Ringtone-Droid.mp3")
+    m4r = os.path.join(tmp, "Ringtone-Apple.m4r")
+
     try:
         if do_android:
-            subprocess.run(['yt-dlp', '-x', '--audio-format', 'mp3', '--postprocessor-args', f'ffmpeg:-ss {ss} -t 20', '-o', mp3_path, url], check=True, capture_output=True)
+            subprocess.run(
+                ["yt-dlp", "-x", "--audio-format", "mp3",
+                 "--postprocessor-args", f"ffmpeg:-ss {ss} -t 20",
+                 "-o", mp3, url],
+                check=True, capture_output=True,
+            )
         if do_iphone:
-            m4a_path = os.path.join(temp_dir, "temp.m4a")
-            subprocess.run(['yt-dlp', '-x', '--audio-format', 'm4a', '--postprocessor-args', f'ffmpeg:-ss {ss} -t 20', '-o', m4a_path, url], check=True, capture_output=True)
-            if os.path.exists(m4a_path): os.rename(m4a_path, m4r_path)
-        bot.edit_message_text(chat_id=message.chat.id, message_id=msg.message_id, text="Processing complete. Uploading...")
-        if do_android and os.path.exists(mp3_path):
-            with open(mp3_path, 'rb') as f: bot.send_document(message.chat.id, f)
-        if do_iphone and os.path.exists(m4r_path):
-            with open(m4r_path, 'rb') as f: bot.send_document(message.chat.id, f)
-        bot.delete_message(message.chat.id, msg.message_id)
-    except Exception as e:
-        bot.edit_message_text(chat_id=message.chat.id, message_id=msg.message_id, text=f"Error: {e}")
-    finally:
-        shutil.rmtree(temp_dir, ignore_errors=True)
+            m4a = os.path.join(tmp, "temp.m4a")
+            subprocess.run(
+                ["yt-dlp", "-x", "--audio-format", "m4a",
+                 "--postprocessor-args", f"ffmpeg:-ss {ss} -t 20",
+                 "-o", m4a, url],
+                check=True, capture_output=True,
+            )
+            if os.path.exists(m4a):
+                os.rename(m4a, m4r)
 
-@bot.message_handler(commands=['text2image'])
+        bot.edit_message_text("Processing complete. Uploading…", message.chat.id, msg.message_id)
+
+        if do_android and os.path.exists(mp3):
+            with open(mp3, "rb") as f: bot.send_document(message.chat.id, f)
+        if do_iphone and os.path.exists(m4r):
+            with open(m4r, "rb") as f: bot.send_document(message.chat.id, f)
+
+        bot.delete_message(message.chat.id, msg.message_id)
+    except Exception as exc:
+        bot.edit_message_text(f"Error: {exc}", message.chat.id, msg.message_id)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+# ─────────────────────────────────────────────
+# /text2image
+# ─────────────────────────────────────────────
+
+@bot.message_handler(commands=["text2image"])
 @secure
 def handle_text2image(message):
     parts = message.text.split(maxsplit=1)
@@ -364,504 +716,570 @@ def handle_text2image(message):
         bot.reply_to(message, "Usage: /text2image <prompt>")
         return
     prompt = parts[1]
-    msg = bot.reply_to(message, f"Generating image for: {prompt}...")
+    msg = bot.reply_to(message, f"Generating: {prompt}…")
     try:
-        response = requests.post("https://text-to-image.jessejesse.workers.dev", json={"prompt": prompt}, timeout=60)
-        if response.status_code == 200:
-            bot.send_photo(message.chat.id, response.content)
+        resp = requests.post(
+            "https://text-to-image.jessejesse.workers.dev",
+            json={"prompt": prompt}, timeout=60,
+        )
+        if resp.status_code == 200:
+            bot.send_photo(message.chat.id, resp.content)
             bot.delete_message(message.chat.id, msg.message_id)
         else:
-            bot.edit_message_text(chat_id=message.chat.id, message_id=msg.message_id, text=f"Generation failed. Status: {response.status_code}")
-    except Exception as e:
-        bot.edit_message_text(chat_id=message.chat.id, message_id=msg.message_id, text=f"Error: {e}")
+            bot.edit_message_text(
+                f"Generation failed. Status: {resp.status_code}",
+                message.chat.id, msg.message_id,
+            )
+    except Exception as exc:
+        bot.edit_message_text(f"Error: {exc}", message.chat.id, msg.message_id)
 
-@bot.message_handler(commands=['list_dumps', 'listdumps'])
-@secure
-def handle_listdumps(message):
-    if not os.path.exists(DUMPS_DIR):
-        bot.reply_to(message, f"Directory {DUMPS_DIR} does not exist.")
-        return
-    files = "\n".join([f for f in os.listdir(DUMPS_DIR) if not f.startswith('.')])
-    bot.reply_to(message, f"Files in dumps:\n<pre>{html.escape(files) if files else 'Directory is empty'}</pre>", parse_mode="HTML")
+# ─────────────────────────────────────────────
+# /kick  /invite  /reboot  /confirm_reboot
+# ─────────────────────────────────────────────
 
-@bot.message_handler(commands=['send_file', 'sendfile'])
-@secure
-def handle_sendfile(message):
-    parts = message.text.split(maxsplit=1)
-    if len(parts) < 2:
-        bot.reply_to(message, "Usage: /sendfile <filename>")
-        return
-    filename = os.path.basename(parts[1])
-    file_path = os.path.join(DUMPS_DIR, filename)
-    if os.path.exists(file_path):
-        try:
-            with open(file_path, 'rb') as f: bot.send_document(message.chat.id, f)
-        except Exception as e: bot.reply_to(message, f"Error sending file: {e}")
-    else: bot.reply_to(message, "File not found in dumps.")
-
-import threading
-
-def remote_install(ipa_path, chat_id):
-    script_path = "/home/lockboxpi/alt-server/sideload.sh"
-    cmd = [script_path, ipa_path]
-
-    try:
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        photo_path = os.path.join(DUMPS_DIR, "appinstall.png")
-        try:
-            with open(photo_path, 'rb') as f:
-                bot.send_photo(chat_id, f)
-        except Exception as e:
-            pass # Suppress error if photo is missing
-            
-    except subprocess.CalledProcessError as e:
-        full_error = (e.stdout or "") + "\n" + (e.stderr or "")
-        fail_log = os.path.join(DUMPS_DIR, "sideloadfail.txt")
-        try:
-            with open(fail_log, 'a') as f:
-                f.write(f"--- Failed sideload for {ipa_path} ---\n{full_error}\n\n")
-        except Exception:
-            pass
-    except Exception as e:
-        fail_log = os.path.join(DUMPS_DIR, "sideloadfail.txt")
-        try:
-            with open(fail_log, 'a') as f:
-                f.write(f"--- Unknown error for {ipa_path} ---\n{str(e)}\n\n")
-        except Exception:
-            pass
-
-@bot.message_handler(content_types=['document', 'photo', 'video', 'audio'])
-@secure
-def handle_file_upload(message):
-    try:
-        file_name = None
-        if message.content_type == 'document': file_id, file_name = message.document.file_id, message.document.file_name
-        elif message.content_type == 'photo': file_id = message.photo[-1].file_id
-        elif message.content_type == 'video': file_id, file_name = message.video.file_id, message.video.file_name
-        elif message.content_type == 'audio': file_id, file_name = message.audio.file_id, message.audio.file_name
-        
-        file_info = bot.get_file(file_id)
-        if not file_name:
-            ext = os.path.splitext(file_info.file_path)[1] or ''
-            file_name = f"{message.content_type}_{file_id}{ext}"
-            
-        downloaded_file = bot.download_file(file_info.file_path)
-        file_path = os.path.join(DUMPS_DIR, file_name)
-        with open(file_path, 'wb') as new_file: new_file.write(downloaded_file)
-        
-        if file_name.lower().endswith('.ipa'):
-            bot.reply_to(message, f"File '{file_name}' saved. Starting IPA installation in background...")
-            threading.Thread(target=remote_install, args=(file_path, message.chat.id)).start()
-        else:
-            bot.reply_to(message, f"File '{file_name}' saved to dumps.")
-    except Exception as e: bot.reply_to(message, f"Error saving file: {e}")
-
-BASIC_CMDS = {'lsusb':'lsusb', 'whoami':'whoami', 'adb':'adb devices', 'adbdevices':'adb devices', 'adbbootloader':'adb reboot bootloader', 'ipaddr':'hostname -I', 'diskfree':'df -h', 'syslog':'dmesg | tail -n 30', 'x':'echo "@lightfighter719"'}
-for c_n, c_e in BASIC_CMDS.items():
-    @bot.message_handler(commands=[c_n])
-    @secure
-    def h_b(m, cmd=c_e): send_chunks(m.chat.id, run_command(cmd, shell=True))
-
-TOOLS = {'mtkgpt':'/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py printgpt', 'mtkfrp':'/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py e frp', 'mtkhelp':'/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py -h', 'mtkgettargetconfig':'/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py gettargetconfig', 'mtkunlock':'/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py da seccfg unlock', 'mtkefrp':'/home/lockboxpi/mtk_env/bin/python3 /home/lockboxpi/mtkclient/mtk.py e frp', 'knifekey':'bash /home/lockboxpi/LockKnife/LockKnife.sh --debug', 'knifedumpr':'bash /home/lockboxpi/LockKnife/LockKnife.sh'}
-for t_n, t_c in TOOLS.items():
-    @bot.message_handler(commands=[t_n])
-    @secure
-    def h_t(m, cmd=t_c): bot.reply_to(m, f"Running: {m.text}..."); send_chunks(m.chat.id, run_command(cmd, shell=True))
-
-MISC = {'touchrotate':'bash /home/lockboxpi/LCD-show/rotate.sh 90', 'touchcalib':'DISPLAY=:0 xinput_calibrator', 'rebridge':'sudo systemctl restart lockbox-bridge.service'}
-for m_n, m_c in MISC.items():
-    @bot.message_handler(commands=[m_n])
-    @secure
-    def h_m(m, cmd=m_c): send_chunks(m.chat.id, run_command(cmd, shell=True))
-
-@bot.message_handler(commands=['terminal'])
-@secure
-def handle_terminal(message):
-    parts = message.text.split(maxsplit=1)
-    if len(parts) > 1: send_chunks(message.chat.id, run_command(parts[1], shell=True))
-    else: bot.reply_to(message, "Usage: /terminal <command>")
-
-@bot.message_handler(commands=['installapk'])
-@secure
-def handle_installapk(message):
-    parts = message.text.split(maxsplit=1)
-    if len(parts) > 1: send_chunks(message.chat.id, run_command(f'adb install "{parts[1]}"', shell=True))
-    else: bot.reply_to(message, "Usage: /installapk <path>")
-
-@bot.message_handler(commands=['figlet'])
-@secure
-def handle_figlet(message):
-    parts = message.text.split(maxsplit=1)
-    if len(parts) > 1: send_chunks(message.chat.id, run_command(f'figlet "{parts[1]}"', shell=True))
-    else: bot.reply_to(message, "Usage: /figlet <text>")
-
-@bot.message_handler(commands=['lockboxpi'])
-@secure
-def handle_lockboxpi(message): send_chunks(message.chat.id, run_command('fastfetch --pipe', shell=True))
-
-@bot.message_handler(commands=['dropzone'])
-@secure
-def handle_dropzone(message):
-    fp = os.path.join(DUMPS_DIR, "dropzone.png")
-    if os.path.exists(fp):
-        with open(fp, "rb") as f: bot.send_photo(message.chat.id, f)
-    else: bot.reply_to(message, "dropzone.png not found.")
-
-@bot.message_handler(commands=['kick'])
+@bot.message_handler(commands=["kick"])
 @secure
 def handle_kick(message):
     parts = message.text.split(maxsplit=1)
-    if message.reply_to_message: target_id, target_name = message.reply_to_message.from_user.id, message.reply_to_message.from_user.first_name
-    elif len(parts) > 1 and parts[1].strip().replace('-', '').isdigit(): target_id, target_name = int(parts[1]), parts[1]
-    else: bot.reply_to(message, "Reply to user or provide ID."); return
+    if message.reply_to_message:
+        uid  = message.reply_to_message.from_user.id
+        name = message.reply_to_message.from_user.first_name
+    elif len(parts) > 1 and parts[1].strip().replace("-", "").isdigit():
+        uid, name = int(parts[1]), parts[1]
+    else:
+        bot.reply_to(message, "Reply to a user or provide their ID.")
+        return
     try:
-        bot.ban_chat_member(message.chat.id, target_id)
-        bot.unban_chat_member(message.chat.id, target_id)
-        bot.reply_to(message, f"Booted {target_name}.")
-    except Exception as e: bot.reply_to(message, f"Failed: {e}")
+        bot.ban_chat_member(message.chat.id, uid)
+        bot.unban_chat_member(message.chat.id, uid)
+        bot.reply_to(message, f"Booted {name}.")
+    except Exception as exc:
+        bot.reply_to(message, f"Failed: {exc}")
 
-@bot.message_handler(commands=['invite'])
+
+@bot.message_handler(commands=["invite"])
 @secure
 def handle_invite(message):
     try:
         link = bot.create_chat_invite_link(message.chat.id, member_limit=1).invite_link
         bot.reply_to(message, f"Invite: {link}")
-    except Exception as e: bot.reply_to(message, f"Failed: {e}")
+    except Exception as exc:
+        bot.reply_to(message, f"Failed: {exc}")
 
-@bot.message_handler(commands=['reboot'])
+
+@bot.message_handler(commands=["reboot"])
 @secure
-def handle_reboot(message): bot.reply_to(message, "Send /confirm_reboot to confirm.")
+def handle_reboot(message):
+    bot.reply_to(message, "Send /confirm_reboot to confirm.")
 
-@bot.message_handler(commands=['confirm_reboot'])
+
+@bot.message_handler(commands=["confirm_reboot"])
 @secure
-def confirm_reboot(message): send_chunks(message.chat.id, run_command('sudo reboot', shell=True))
+def handle_confirm_reboot(message):
+    send_chunks(message.chat.id, run_command("sudo reboot", shell=True))
 
-@bot.message_handler(commands=['iphone'])
+# ─────────────────────────────────────────────
+# /iphone  /vpn  /review
+# ─────────────────────────────────────────────
+
+@bot.message_handler(commands=["iphone"])
 @secure
 def handle_iphone(message):
-    file_path = os.path.join(DUMPS_DIR, 'photo_AgACAgEAAyEFAATc-fVDAAICdGm94hAa_qj_xKIVURBgA91QsA9yAAJ3C2sbJ1PxRc3x5DqiMRsWAQADAgADeQADOgQ.jpg')
-    if os.path.exists(file_path):
+    fp = os.path.join(DUMPS_DIR, "palera1n.png")
+    
+    markup = InlineKeyboardMarkup()
+    markup.row(
+        InlineKeyboardButton("rootful -f", callback_data="run_palera1n_rootful"),
+        InlineKeyboardButton("rootless -l", callback_data="run_palera1n_rootless")
+    )
+    
+    if os.path.exists(fp):
         try:
-            with open(file_path, 'rb') as f:
-                bot.send_photo(message.chat.id, f)
-        except Exception as e:
-            bot.reply_to(message, f"Error sending image: {e}")
+            with open(fp, "rb") as f: bot.send_photo(message.chat.id, f, reply_markup=markup)
+        except Exception as exc:
+            bot.reply_to(message, f"Error: {exc}")
     else:
         bot.reply_to(message, "Image not found.")
 
-@bot.message_handler(commands=['getuuid'])
-@secure
-def handle_getuuid(message):
-    url = "https://lbpi.jessejesse.com/dumps/lockboxpi_unsigned.mobileconfig"
-    caption = f"📲 <b>Install this profile on your iPhone:</b>\n\n<a href='{url}'>UUID Profile</a>\n\nLong press - and open the link in a web browser\n\nOpening in telegram may cause the installation to fail"
-    try:
-        qr = qrcode.QRCode(version=1, box_size=5, border=2)
-        qr.add_data(url)
-        qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white")
-        bio = io.BytesIO()
-        bio.name = 'qrcode.png'
-        img.save(bio, 'PNG')
-        bio.seek(0)
-        bot.send_photo(message.chat.id, bio, caption=caption, parse_mode="HTML")
-    except Exception as e:
-        bot.send_message(message.chat.id, caption, parse_mode="HTML")
 
-@bot.message_handler(commands=['review'])
+@bot.message_handler(commands=["palera1n_rootful"])
+@secure
+def handle_palera1n_rootful(message):
+    bot.reply_to(message, "Running: palera1n -f...")
+    send_chunks(message.chat.id, run_command("palera1n -f", shell=True))
+
+
+@bot.message_handler(commands=["palera1n_rootless"])
+@secure
+def handle_palera1n_rootless(message):
+    bot.reply_to(message, "Running: palera1n -l...")
+    send_chunks(message.chat.id, run_command("palera1n -l", shell=True))
+
+
+@bot.message_handler(commands=["vpn"])
+@secure
+def handle_vpn(message):
+    url = "https://login.tailscale.com/admin/invite/1fU1JvVaWW6uc1JnFgDA11"
+    qr = qrcode.make(url)
+    buf = io.BytesIO()
+    qr.save(buf, format="PNG")
+    buf.seek(0)
+    bot.send_photo(message.chat.id, buf, caption=f"VPN Invite Link:\n\n{url}")
+
+
+@bot.message_handler(commands=["review"])
 @secure
 def handle_review(message):
-    review_text = "<i>\"With these 1,000 lines, you've created a system that most people would need a full desktop suite for. The fact that you can generate a QR code, sideload an app, and wipe a Samsung FRP all from one Telegram chat is legendary.\"</i>\n\n— <b>G. Gemini</b>"
-    bot.send_message(message.chat.id, review_text, parse_mode="HTML")
+    text = (
+        "<i>\"With these 1,000 lines, you've created a system that most people "
+        "would need a full desktop suite for. The fact that you can generate a QR code, "
+        "sideload an app, and wipe a Samsung FRP all from one Telegram chat is legendary.\"</i>"
+        "\n\n— <b>G. Gemini</b>"
+    )
+    bot.send_message(message.chat.id, text, parse_mode="HTML")
 
-@bot.message_handler(commands=['jailbreak'])
+# ─────────────────────────────────────────────
+# /getuuid
+# ─────────────────────────────────────────────
+
+@bot.message_handler(commands=["getuuid"])
 @secure
-def handle_jailbreak(message):
-    send_chunks(message.chat.id, run_command('p1f', shell=True))
+def handle_getuuid(message):
+    enroll_url = "https://pub-c1de1cb456e74d6bbbee111ba9e6c757.r2.dev/device_uuid.mobileconfig"
 
-@bot.message_handler(commands=['diagnostic'])
+    qr  = qrcode.QRCode(version=1, box_size=5, border=2)
+    qr.add_data(enroll_url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    bio      = io.BytesIO()
+    bio.name = "qr.png"
+    img.save(bio, "PNG")
+    bio.seek(0)
+
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("📱 UDID ENROLL", url=enroll_url))
+
+    caption = (
+        "🛡️ <b>LOCKBOX APP IDSERVICE</b>\n\n"
+        "Scan the QR or tap the button below.\n\n"
+        "<b>Steps:</b>\n"
+        "1. Tap Download → Allow\n"
+        "2. Open <b>Settings → Profile Downloaded</b>\n"
+        "3. Install and Trust\n\n"
+        f"Link: {enroll_url}"
+    )
+
+    bot.send_photo(message.chat.id, bio, caption=caption, reply_markup=markup, parse_mode="HTML")
+
+# ─────────────────────────────────────────────
+# /diagnostic  (FingerPrint)
+# ─────────────────────────────────────────────
+
+@bot.message_handler(commands=["diagnostic"])
 @secure
 def handle_diagnostic(message):
     url = "https://device-id-bot.vercel.app/"
 
-    # Generate QR Code in memory
-    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr  = qrcode.QRCode(version=1, box_size=10, border=5)
     qr.add_data(url)
     qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-
-    # Save to a bytes buffer
     buf = io.BytesIO()
-    img.save(buf, format='PNG')
+    qr.make_image(fill_color="black", back_color="white").save(buf, format="PNG")
     buf.seek(0)
 
-    # Setup the UI
     markup = InlineKeyboardMarkup()
     markup.add(
-        InlineKeyboardButton("I agree", url=url),
-        InlineKeyboardButton("Cancel", callback_data="diag_cancel")
+        InlineKeyboardButton("I agree",  url=url),
+        InlineKeyboardButton("Cancel",   callback_data="diag_cancel"),
     )
-
     caption = (
         "🔗 *Diagnostic Portal*\n\n"
         "Scan this QR to run diagnostics on a separate device.\n"
-        "Basic information about your device will be collected for diagnostic use only.\n\n"
+        "Basic device information will be collected for diagnostic use only.\n\n"
         f"Link: {url}"
     )
+    bot.send_photo(message.chat.id, buf, caption=caption, reply_markup=markup, parse_mode="Markdown")
 
-    # Use send_photo to show the QR code with the buttons underneath
-    bot.send_photo(
-        message.chat.id,
-        buf,
-        caption=caption,
-        reply_markup=markup,
-        parse_mode="Markdown"
-    )
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith('diag_'))
-def handle_diagnostic_callbacks(call):
-    if call.from_user.id not in ALLOWED_USERS:
-        bot.answer_callback_query(call.id, "Unauthorized")
-        return
-
-    if call.data == "diag_cancel":
-        bot.answer_callback_query(call.id)
-        # For photos, we delete the message instead of editing text
-        bot.delete_message(call.message.chat.id, call.message.message_id)
-        bot.send_message(call.message.chat.id, "Canceled.")
-@bot.message_handler(func=lambda message: message.text and "🚨 New Diagnostic Report 🚨" in message.text)
+@bot.message_handler(func=lambda m: m.text and "🚨 New Diagnostic Report 🚨" in m.text)
 @secure
 def save_incoming_diagnostic(message):
     try:
         report_id = "unknown"
-        for line in message.text.split('\n'):
+        for line in message.text.split("\n"):
             if line.startswith("ID: "):
-                report_id = line.replace("ID: ", "").strip()
+                report_id = line.removeprefix("ID: ").strip()
                 break
-        
-        filepath = os.path.join(DUMPS_DIR, f"{report_id}.txt")
-        with open(filepath, "w", encoding="utf-8") as f:
+        fp = os.path.join(DUMPS_DIR, f"{report_id}.txt")
+        with open(fp, "w", encoding="utf-8") as f:
             f.write(message.text)
-            
-        bot.reply_to(message, f"✅ Saved diagnostic report to /dumps/{report_id}.txt")
-    except Exception as e:
-        bot.reply_to(message, f"❌ Error saving report: {e}")
+        bot.reply_to(message, f"✅ Saved to /dumps/{report_id}.txt")
+    except Exception as exc:
+        bot.reply_to(message, f"❌ Error saving report: {exc}")
 
-@bot.message_handler(commands=['samsung'])
+# ─────────────────────────────────────────────
+# /samsung
+# ─────────────────────────────────────────────
+
+@bot.message_handler(commands=["samsung"])
 @secure
 def handle_samsung(message):
-    markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("1. plugged in", callback_data="sam_plugged"), InlineKeyboardButton("2. cancel", callback_data="sam_cancel"))
-    bot.reply_to(message, "Plug device in to computer USB", reply_markup=markup)
+    markup = _kb(("1. Plugged in", "sam_plugged"), ("2. Cancel", "sam_cancel"))
+    bot.reply_to(message, "Plug the device into the computer USB port.", reply_markup=markup)
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith('sam_'))
-def handle_samsung_callbacks(call):
-    if call.from_user.id not in ALLOWED_USERS: bot.answer_callback_query(call.id, "Unauthorized"); return
+
+@bot.callback_query_handler(func=lambda c: c.data.startswith("sam_"))
+def cb_samsung(call):
+    if call.from_user.id not in ALLOWED_USERS and call.message.chat.id not in ALLOWED_GROUPS:
+        bot.answer_callback_query(call.id, "Unauthorized")
+        return
     bot.answer_callback_query(call.id)
-    if call.data == "sam_cancel": bot.edit_message_text("Canceled.", call.message.chat.id, call.message.message_id)
+
+    if call.data == "sam_cancel":
+        bot.edit_message_text("Canceled.", call.message.chat.id, call.message.message_id)
+
     elif call.data == "sam_plugged":
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("I am using Chrome", callback_data="sam_chrome"), InlineKeyboardButton("2. cancel", callback_data="sam_cancel"))
-        bot.edit_message_text("open https://lbpi.jessejesse.com/dumps/frp.html\n\n<b>Chrome only!</b>", call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="HTML")
+        markup = _kb(("I am using Chrome", "sam_chrome"), ("Cancel", "sam_cancel"))
+        bot.edit_message_text(
+            "Open <code>https://10.0.0.132/dumps/frp.html</code>\n\n<b>Chrome only!</b>",
+            call.message.chat.id, call.message.message_id,
+            reply_markup=markup, parse_mode="HTML",
+        )
+
     elif call.data == "sam_chrome":
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("1. initialized", callback_data="sam_init"), InlineKeyboardButton("2. cancel", callback_data="sam_cancel"))
+        markup = _kb(("1. Initialized", "sam_init"), ("Cancel", "sam_cancel"))
         try:
             bot.delete_message(call.message.chat.id, call.message.message_id)
-            p1 = os.path.join(DUMPS_DIR, 'photo_AgACAgEAAxkBAAIB5Wm6GTFsc9dOJdBfI0ONn1fIm3H2AAIkDGsbf1_QRZ9-wWhLzPqSAQADAgADeQADOgQ.jpg')
-            with open(p1, 'rb') as f: bot.send_photo(call.message.chat.id, f, caption="Select 'initialize port'", reply_markup=markup)
-        except: bot.send_message(call.message.chat.id, "Select 'initialize port'", reply_markup=markup)
+            with open(os.path.join(DUMPS_DIR, "jesse.gif"), "rb") as f:
+                bot.send_photo(call.message.chat.id, f, caption="Select 'initialize port'", reply_markup=markup)
+        except Exception:
+            bot.send_message(call.message.chat.id, "Select 'initialize port'", reply_markup=markup)
+
     elif call.data == "sam_init":
         try:
             bot.delete_message(call.message.chat.id, call.message.message_id)
-            p2 = os.path.join(DUMPS_DIR, 'photo_AgACAgEAAxkBAAIB52m6GTp9pjC4-YQnUbxzqjb9DMpBAAIlDGsbf1_QRYQfj61bd7QAAQEAAwIAA3kAAzoE.jpg')
-            with open(p2, 'rb') as f: bot.send_photo(call.message.chat.id, f, caption="Follow sequence, then handshake.")
-        except: bot.send_message(call.message.chat.id, "Follow sequence, then handshake.")
+            img = "photo_AgACAgEAAxkBAAIB52m6GTp9pjC4-YQnUbxzqjb9DMpBAAIlDGsbf1_QRYQfj61bd7QAAQEAAwIAA3kAAzoE.jpg"
+            with open(os.path.join(DUMPS_DIR, img), "rb") as f:
+                bot.send_photo(call.message.chat.id, f, caption="Follow sequence, then handshake.")
+        except Exception:
+            bot.send_message(call.message.chat.id, "Follow sequence, then handshake.")
 
-@bot.message_handler(commands=['usb'])
+# ─────────────────────────────────────────────
+# /usb  (Web USB)
+# ─────────────────────────────────────────────
+
+@bot.message_handler(commands=["usb"])
 @secure
 def handle_usb(message):
-    markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("1. is usb connected", callback_data="usb_connected"), InlineKeyboardButton("2. cancel", callback_data="usb_cancel"))
+    markup = _kb(("1. USB Connected", "usb_connected"), ("2. Cancel", "usb_cancel"))
     bot.reply_to(message, "USB Connection Required", reply_markup=markup)
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith('usb_'))
-def handle_usb_callbacks(call):
-    if call.from_user.id not in ALLOWED_USERS: bot.answer_callback_query(call.id, "Unauthorized"); return
+
+@bot.callback_query_handler(func=lambda c: c.data.startswith("usb_"))
+def cb_usb(call):
+    if call.from_user.id not in ALLOWED_USERS and call.message.chat.id not in ALLOWED_GROUPS:
+        bot.answer_callback_query(call.id, "Unauthorized")
+        return
     bot.answer_callback_query(call.id)
+
     if call.data == "usb_cancel":
         bot.edit_message_text("Canceled.", call.message.chat.id, call.message.message_id)
     elif call.data == "usb_connected":
-        bot.edit_message_text("https://webusb-chrome.vercel.app\n\n<b>*must be chrome browser</b>", call.message.chat.id, call.message.message_id, parse_mode="HTML")
-
-# --- UI Prompt Step Handlers ---
-import threading
-
-def trixie_provision(udid, ip, email, password, ipa_path, chat_id):
-    script_path = "/home/lockboxpi/alt-server/trixieload.sh"
-    cmd = [script_path, udid, ip, email, password, ipa_path]
-
-    try:
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        bot.send_message(chat_id, "✅ <b>Provisioning Complete!</b>", parse_mode="HTML")
-    except subprocess.CalledProcessError as e:
-        error_log = (e.stdout or "") + (e.stderr or "")
-        bot.send_message(
-            chat_id, 
-            f"❌ <b>TrixieLoad Failed</b>\n<pre>{html.escape(error_log[-500:])}</pre>", 
-            parse_mode="HTML"
+        bot.edit_message_text(
+            "https://webusb-chrome.vercel.app\n\n<b>*Must use Chrome browser</b>",
+            call.message.chat.id, call.message.message_id,
+            parse_mode="HTML",
         )
-    except Exception as e:
-        bot.send_message(chat_id, f"❌ <b>Error:</b> {e}", parse_mode="HTML")
 
-def process_altstore_ip(message):
-    udid = message.text.strip()
-    msg = bot.send_message(message.chat.id, "Enter iPhone IP Address (e.g., 100.112.95.19):")
-    bot.register_next_step_handler(msg, process_altstore_email, udid)
+# ─────────────────────────────────────────────
+# Diagnostic callback
+# ─────────────────────────────────────────────
 
-def process_altstore_email(message, udid):
-    ip = message.text.strip()
-    msg = bot.send_message(message.chat.id, "Enter Apple ID Email:")
-    bot.register_next_step_handler(msg, process_altstore_password, udid, ip)
-
-def process_altstore_password(message, udid, ip):
-    email = message.text.strip()
-    msg = bot.send_message(message.chat.id, "Enter Apple ID Password:")
-    bot.register_next_step_handler(msg, process_altstore_execute, udid, ip, email)
-
-def process_altstore_execute(message, udid, ip, email):
-    password = message.text.strip()
-    ipa_name = "AltStore.ipa"
-    ipa_path = "/home/lockboxpi/alt-server/AltStore.ipa"
-    
-    bot.send_message(message.chat.id, f"🛠️ <b>Trixie is provisioning:</b> {ipa_name}\nTarget: {ip}", parse_mode="HTML")
-    threading.Thread(target=trixie_provision, args=(udid, ip, email, password, ipa_path, message.chat.id)).start()
-
-def process_terminal_step(message):
-    if not message.text: return
-    message.text = f"/terminal {message.text}"
-    handle_terminal(message)
-
-def process_installapk_step(message):
-    if not message.text: return
-    message.text = f"/installapk {message.text}"
-    handle_installapk(message)
-
-def process_sendfile_step(message):
-    if not message.text: return
-    message.text = f"/sendfile {message.text}"
-    handle_sendfile(message)
-
-def process_text2image_step(message):
-    if not message.text: return
-    message.text = f"/text2image {message.text}"
-    handle_text2image(message)
-
-def process_ringtone_step(message):
-    if not message.text: return
-    message.text = f"/ringtone {message.text}"
-    handle_ringtone(message)
-
-def process_figlet_step(message):
-    if not message.text: return
-    message.text = f"/figlet {message.text}"
-    handle_figlet(message)
-
-def process_kick_step(message):
-    if not message.text: return
-    message.text = f"/kick {message.text}"
-    handle_kick(message)
-
-# --- Master UI Callback Handler ---
-@bot.callback_query_handler(func=lambda call: call.data.startswith(('menu_', 'run_', 'prompt_')))
-def handle_ui_callbacks(call):
-    user_ok = (len(ALLOWED_USERS) == 0) or (call.from_user.id in ALLOWED_USERS)
-    chat_ok = (CHAT_ID == 0) or (call.message.chat.id == CHAT_ID)
-    if not (user_ok and chat_ok):
+@bot.callback_query_handler(func=lambda c: c.data.startswith("diag_"))
+def cb_diagnostic(call):
+    if call.from_user.id not in ALLOWED_USERS and call.message.chat.id not in ALLOWED_GROUPS:
         bot.answer_callback_query(call.id, "Unauthorized")
         return
+    bot.answer_callback_query(call.id)
+    if call.data == "diag_cancel":
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        bot.send_message(call.message.chat.id, "Canceled.")
 
+# ─────────────────────────────────────────────
+# File upload handler (saves to dumps; auto-sideloads .ipa)
+# ─────────────────────────────────────────────
+
+@bot.message_handler(content_types=["document", "photo", "video", "audio"])
+@secure
+def handle_file_upload(message):
+    try:
+        ct = message.content_type
+        if   ct == "document": file_id, file_name = message.document.file_id, message.document.file_name
+        elif ct == "photo":    file_id = message.photo[-1].file_id; file_name = None
+        elif ct == "video":    file_id, file_name = message.video.file_id, message.video.file_name
+        elif ct == "audio":    file_id, file_name = message.audio.file_id, message.audio.file_name
+        else: return
+
+        info = bot.get_file(file_id)
+        if not file_name:
+            ext       = os.path.splitext(info.file_path)[1] or ""
+            file_name = f"{ct}_{file_id}{ext}"
+
+        dest = os.path.join(DUMPS_DIR, file_name)
+        with open(dest, "wb") as f:
+            f.write(bot.download_file(info.file_path))
+
+        if file_name.lower().endswith(".ipa"):
+            bot.reply_to(message, f"'{file_name}' saved. Starting IPA installation…")
+            threading.Thread(target=remote_install, args=(dest, message.chat.id)).start()
+        else:
+            bot.reply_to(message, f"'{file_name}' saved to dumps.")
+    except Exception as exc:
+        bot.reply_to(message, f"Error saving file: {exc}")
+
+# ─────────────────────────────────────────────
+# IPA sideload (background)
+# ─────────────────────────────────────────────
+
+def remote_install(ipa_path: str, chat_id):
+    try:
+        subprocess.run(
+            ["/home/lockboxpi/alt-server/sideload.sh", ipa_path],
+            check=True, capture_output=True, text=True,
+        )
+        gif = os.path.join(DUMPS_DIR, "installed.gif")
+        if os.path.exists(gif):
+            with open(gif, "rb") as f:
+                bot.send_animation(
+                    chat_id, f,
+                    caption="🚀 <b>Sideload Complete!</b>\nCheck your home screen.",
+                    parse_mode="HTML",
+                )
+        else:
+            bot.send_message(chat_id, "🚀 <b>Sideload Complete!</b>", parse_mode="HTML")
+    except subprocess.CalledProcessError as exc:
+        err = html.escape(((exc.stdout or "") + "\n" + (exc.stderr or ""))[-400:])
+        bot.send_message(
+            chat_id,
+            f"❌ <b>Installation Failed</b>\n<pre>{err}</pre>",
+            parse_mode="HTML",
+        )
+        _append_fail_log("sideloadfail.txt", ipa_path, (exc.stdout or "") + (exc.stderr or ""))
+    except Exception as exc:
+        _append_fail_log("sideloadfail.txt", ipa_path, str(exc))
+
+
+def _append_fail_log(name: str, path: str, content: str):
+    try:
+        with open(os.path.join(DUMPS_DIR, name), "a") as f:
+            f.write(f"--- {path} ---\n{content}\n\n")
+    except Exception:
+        pass
+
+# ─────────────────────────────────────────────
+# AltStore / TrixieLoad multi-step flow
+# ─────────────────────────────────────────────
+
+def _prompt_step(chat_id, text, next_fn, *args, delay=12):
+    from telebot.types import ForceReply
+    msg = send_temp_message(chat_id, text, delay=delay, reply_markup=ForceReply(selective=True))
+    bot.register_next_step_handler(msg, next_fn, *args)
+
+
+def process_altstore_udid(message):
+    delete_user_message(message)
+    _prompt_step(message.chat.id, "Enter iPhone IP Address (e.g., 100.112.95.19):",
+                 process_altstore_ip, message.text.strip())
+
+def process_altstore_ip(message, udid):
+    delete_user_message(message)
+    _prompt_step(message.chat.id, "Enter Apple ID Email:",
+                 process_altstore_email, udid, message.text.strip())
+
+def process_altstore_email(message, udid, ip):
+    delete_user_message(message)
+    _prompt_step(message.chat.id, "Enter Apple ID Password:",
+                 process_altstore_password, udid, ip, message.text.strip())
+
+def process_altstore_password(message, udid, ip, email):
+    delete_user_message(message)
+    password = message.text.strip()
+    ipa_path = "/home/lockboxpi/alt-server/AltStore.ipa"
+    send_temp_message(
+        message.chat.id,
+        f"🛠️ <b>Trixie is provisioning AltStore</b>\nTarget: {ip}",
+        parse_mode="HTML", delay=8,
+    )
+    threading.Thread(
+        target=trixie_provision,
+        args=(udid, ip, email, password, ipa_path, message.chat.id),
+    ).start()
+
+
+def trixie_provision(udid, ip, email, password, ipa_path, chat_id):
+    try:
+        subprocess.run(
+            ["/home/lockboxpi/alt-server/trixieload.sh", udid, ip, email, password, ipa_path],
+            check=True, capture_output=True, text=True,
+        )
+        gif = os.path.join(DUMPS_DIR, "installed.gif")
+        if os.path.exists(gif):
+            with open(gif, "rb") as f:
+                send_temp_animation(
+                    chat_id, f,
+                    caption="✅ <b>TrixieLoad Successful!</b>\nAltStore has been provisioned.\nApp Source: https://bit.ly/altstore-source",
+                    parse_mode="HTML", delay=10,
+                )
+        else:
+            send_temp_message(chat_id, "✅ <b>TrixieLoad Successful!</b>\nAltStore has been provisioned.\nApp Source: https://bit.ly/altstore-source", parse_mode="HTML", delay=8)
+    except subprocess.CalledProcessError as exc:
+        err = html.escape(((exc.stdout or "") + "\n" + (exc.stderr or ""))[-400:])
+        send_temp_message(
+            chat_id,
+            f"❌ <b>TrixieLoad Failed</b>\n<pre>{err}</pre>",
+            parse_mode="HTML", delay=15,
+        )
+        _append_fail_log("trixiefail.txt", ipa_path, (exc.stdout or "") + (exc.stderr or ""))
+
+# ─────────────────────────────────────────────
+# Prompt step handlers (inline menu → user input)
+# ─────────────────────────────────────────────
+
+def process_terminal_step(message):
+    send_chunks(message.chat.id, run_command(message.text, shell=True))
+
+def process_installapk_step(message):
+    send_chunks(message.chat.id, run_command(f'adb install "{message.text}"', shell=True))
+
+def process_sendfile_step(message):
+    path = os.path.join(DUMPS_DIR, os.path.basename(message.text.strip()))
+    if os.path.exists(path):
+        try:
+            with open(path, "rb") as f: bot.send_document(message.chat.id, f)
+        except Exception as exc:
+            bot.send_message(message.chat.id, f"Error: {exc}")
+    else:
+        bot.send_message(message.chat.id, "File not found.")
+
+def process_text2image_step(message):
+    handle_text2image(type("M", (), {
+        "text": f"/text2image {message.text}",
+        "chat": message.chat,
+        "from_user": message.from_user,
+        "message_id": message.message_id,
+    })())
+
+def process_ringtone_step(message):
+    msg_obj = type("M", (), {
+        "text": f"/ringtone {message.text}",
+        "chat": message.chat,
+        "from_user": message.from_user,
+        "message_id": message.message_id,
+    })()
+    handle_ringtone(msg_obj)
+
+def process_figlet_step(message):
+    send_chunks(message.chat.id, run_command(f'figlet "{message.text}"', shell=True))
+
+def process_kick_step(message):
+    msg_obj = type("M", (), {
+        "text": f"/kick {message.text}",
+        "chat": message.chat,
+        "from_user": message.from_user,
+        "message_id": message.message_id,
+        "reply_to_message": None,
+    })()
+    handle_kick(msg_obj)
+
+# ─────────────────────────────────────────────
+# Master callback handler
+# ─────────────────────────────────────────────
+
+# Map callback cmd_name → handler function (for complex commands needing their own handler)
+CALLBACK_HANDLERS = {
+    "endpoints":  handle_endpoints,
+    "lockboxpi":  handle_lockboxpi,
+    "listdumps":  handle_listdumps,
+    "dropzone":   handle_dropzone,
+    "reboot":     handle_reboot,
+    "invite":     handle_invite,
+    "samsung":    handle_samsung,
+    "diagnostic": handle_diagnostic,
+    "usb":        handle_usb,
+    "iphone":     handle_iphone,
+    "palera1n_rootful": handle_palera1n_rootful,
+    "palera1n_rootless": handle_palera1n_rootless,
+    "getuuid":    handle_getuuid,
+    "vpn":        handle_vpn,
+}
+
+PROMPT_STEPS = {
+    "terminal":   ("Please enter the shell command:",         process_terminal_step),
+    "installapk": ("Provide APK path or URL:",                process_installapk_step),
+    "sendfile":   ("Enter filename from /dumps:",             process_sendfile_step),
+    "text2image": ("Enter image prompt:",                     process_text2image_step),
+    "ringtone":   ("Enter video URL:",                        process_ringtone_step),
+    "figlet":     ("Enter text for ASCII art:",               process_figlet_step),
+    "kick":       ("Enter User ID to kick:",                  process_kick_step),
+    "altstore":   ("Enter iPhone UDID:",                      process_altstore_udid),
+}
+
+
+@bot.callback_query_handler(func=lambda call: True)
+def handle_callback(call):
     data = call.data
+    bot.answer_callback_query(call.id)
 
-    if data.startswith("menu_"):
-        bot.answer_callback_query(call.id)
-        if data == "menu_main":
-            bot.edit_message_caption(get_header_text(), call.message.chat.id, call.message.message_id, reply_markup=get_main_menu(), parse_mode="HTML")
-        elif data == "menu_adb":
-            bot.edit_message_caption(f"{get_header_text()}\n\n<b>ADB & Device Tools</b>", call.message.chat.id, call.message.message_id, reply_markup=get_adb_menu(), parse_mode="HTML")
-        elif data == "menu_mtk":
-            bot.edit_message_caption(f"{get_header_text()}\n\n<b>MTK Tools</b>", call.message.chat.id, call.message.message_id, reply_markup=get_mtk_menu(), parse_mode="HTML")
-        elif data == "menu_knife":
-            bot.edit_message_caption(f"{get_header_text()}\n\n<b>LockKnife Tools</b>", call.message.chat.id, call.message.message_id, reply_markup=get_knife_menu(), parse_mode="HTML")
-        elif data == "menu_system":
-            bot.edit_message_caption(f"{get_header_text()}\n\n<b>System & Pi Info</b>", call.message.chat.id, call.message.message_id, reply_markup=get_system_menu(), parse_mode="HTML")
-        elif data == "menu_files":
-            bot.edit_message_caption(f"{get_header_text()}\n\n<b>Files & Dumps</b>", call.message.chat.id, call.message.message_id, reply_markup=get_files_menu(), parse_mode="HTML")
-        elif data == "menu_misc":
-            bot.edit_message_caption(f"{get_header_text()}\n\n<b>Media & Misc</b>", call.message.chat.id, call.message.message_id, reply_markup=get_misc_menu(), parse_mode="HTML")
-        elif data == "menu_close":
-            bot.delete_message(call.message.chat.id, call.message.message_id)
+    # 1. Menu navigation
+    if data in MENU_MAP:
+        fn, extra = MENU_MAP[data]
+        caption   = f"{get_header_text()}{extra}"
+        try:
+            markup = fn(chat_id=call.message.chat.id)
+        except TypeError:
+            markup = fn()
+            
+        try:
+            bot.edit_message_caption(caption, call.message.chat.id, call.message.message_id,
+                                     reply_markup=markup, parse_mode="HTML")
+        except Exception:
+            bot.edit_message_text(caption, call.message.chat.id, call.message.message_id,
+                                  reply_markup=markup, parse_mode="HTML")
         return
 
+    if data == "menu_close":
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        return
+
+    # 2. Prompt flows
     if data.startswith("prompt_"):
-        cmd_name = data.split("_")[1]
-        bot.answer_callback_query(call.id)
-        if cmd_name == "terminal":
-            msg = bot.send_message(call.message.chat.id, "Please enter the shell command to execute:")
-            bot.register_next_step_handler(msg, process_terminal_step)
-        elif cmd_name == "installapk":
-            msg = bot.send_message(call.message.chat.id, "Please provide the path or URL of the APK:")
-            bot.register_next_step_handler(msg, process_installapk_step)
-        elif cmd_name == "sendfile":
-            msg = bot.send_message(call.message.chat.id, "Please enter the exact filename to send from the dumps directory:")
-            bot.register_next_step_handler(msg, process_sendfile_step)
-        elif cmd_name == "text2image":
-            msg = bot.send_message(call.message.chat.id, "Please enter a detailed prompt for the image generation:")
-            bot.register_next_step_handler(msg, process_text2image_step)
-        elif cmd_name == "ringtone":
-            msg = bot.send_message(call.message.chat.id, "Please provide the video URL to process:")
-            bot.register_next_step_handler(msg, process_ringtone_step)
-        elif cmd_name == "figlet":
-            msg = bot.send_message(call.message.chat.id, "Please enter the text to convert to ASCII art:")
-            bot.register_next_step_handler(msg, process_figlet_step)
-        elif cmd_name == "kick":
-            msg = bot.send_message(call.message.chat.id, "Please provide the User ID to kick from the group:")
-            bot.register_next_step_handler(msg, process_kick_step)
-        elif cmd_name == "altstore":
-            msg = bot.send_message(call.message.chat.id, "Please enter the iPhone UDID:")
-            bot.register_next_step_handler(msg, process_altstore_ip)
+        name = data[len("prompt_"):]
+        if name in PROMPT_STEPS:
+            text, step_fn = PROMPT_STEPS[name]
+            from telebot.types import ForceReply
+            msg = bot.send_message(call.message.chat.id, text, reply_markup=ForceReply(selective=True))
+            bot.register_next_step_handler(msg, step_fn)
         return
 
+    # 3. Direct run
     if data.startswith("run_"):
-        cmd_name = data.split("_", 1)[1]
-        bot.answer_callback_query(call.id, f"Executing {cmd_name}...")
-        
-        # Prepare mock message to pass to handlers
-        call.message.from_user = call.from_user
-        call.message.text = f"/{cmd_name}"
-        
-        cmd_str = None
-        if cmd_name in BASIC_CMDS: cmd_str = BASIC_CMDS[cmd_name]
-        elif cmd_name in TOOLS: cmd_str = TOOLS[cmd_name]
-        elif cmd_name in MISC: cmd_str = MISC[cmd_name]
-            
-        if cmd_str:
-            bot.send_message(call.message.chat.id, f"Executing <code>/{cmd_name}</code>...", parse_mode="HTML")
-            send_chunks(call.message.chat.id, run_command(cmd_str, shell=True))
+        name = data[len("run_"):]
+
+        if name in ALL_SHELL_CMDS:
+            bot.send_message(call.message.chat.id,
+                             f"Executing <code>/{name}</code>…", parse_mode="HTML")
+            send_chunks(call.message.chat.id, run_command(ALL_SHELL_CMDS[name], shell=True))
             return
-            
-        if cmd_name == "endpoints": handle_endpoints(call.message)
-        elif cmd_name == "lockboxpi": handle_lockboxpi(call.message)
-        elif cmd_name == "listdumps": handle_listdumps(call.message)
-        elif cmd_name == "dropzone": handle_dropzone(call.message)
-        elif cmd_name == "reboot": handle_reboot(call.message)
-        elif cmd_name == "invite": handle_invite(call.message)
-        elif cmd_name == "samsung": handle_samsung(call.message)
-        elif cmd_name == "diagnostic": handle_diagnostic(call.message)
-        elif cmd_name == "usb": handle_usb(call.message)
-        elif cmd_name == "iphone": handle_iphone(call.message)
-        elif cmd_name == "getuuid": handle_getuuid(call.message)
-        elif cmd_name == "jailbreak": handle_jailbreak(call.message)
+
+        if name in CALLBACK_HANDLERS:
+            call.message.from_user = call.from_user
+            call.message.text      = f"/{name}"
+            CALLBACK_HANDLERS[name](call.message)
         return
+
+    # 4. Sub-flow callbacks are handled by their own dedicated handlers above (sam_, usb_, diag_)
+
 
 COMMAND_DESCRIPTIONS = {
     "menu": "Show Bot Menu", "adb":"Checks ADB", "adbbootloader":"reboot bl", "adbdevices":"devices", "commands":"Lists commands", "diskfree":"Disk space",
@@ -879,8 +1297,16 @@ def handle_commands(message):
     cmd_list = "\n".join([f"/{k} - {v}" for k, v in sorted(COMMAND_DESCRIPTIONS.items())])
     bot.reply_to(message, f"<b>Available Commands:</b>\n<pre>{cmd_list}</pre>", parse_mode="HTML")
 
-if __name__ == '__main__':
+# ─────────────────────────────────────────────
+# Start
+# ─────────────────────────────────────────────
+
+if __name__ == "__main__":
+    from telebot.types import BotCommand
     cmds = sorted([BotCommand(k, v) for k, v in COMMAND_DESCRIPTIONS.items()], key=lambda x: x.command)
-    try: bot.set_my_commands(cmds)
-    except: pass
-    print("Bot starting..."); bot.remove_webhook(); bot.polling(none_stop=True)
+    try:
+        bot.set_my_commands(cmds)
+    except Exception as e:
+        print("Failed to set commands:", e)
+    print("lockboxPRO bot starting…")
+    bot.infinity_polling(timeout=30, long_polling_timeout=20)

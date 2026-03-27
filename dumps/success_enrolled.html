@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --monolith-black: #0a0a0a;
+            --anodized-grey: #1c1c1e;
+            --machine-silver: #e2e2e2;
+            --accent-blue: #007aff;
+            --grain: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #050505;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+
+        /* The Monolith Card */
+        .monolith {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            background: var(--anodized-grey);
+            border-radius: 1px; /* Sharp machined corners */
+            padding: 2px; /* For the chamfer effect */
+            box-shadow: 
+                0 30px 60px rgba(0,0,0,0.8),
+                inset 0 0 0 1px rgba(255,255,255,0.05);
+            animation: monolith-reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+        }
+
+        /* Anodized Texture Overlay */
+        .monolith::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: var(--grain);
+            opacity: 0.04;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* Chamfered Edge Simulation */
+        .monolith-inner {
+            background: linear-gradient(145deg, #242426 0%, #141415 100%);
+            padding: 24px;
+            position: relative;
+            z-index: 1;
+            border: 1px solid rgba(0,0,0,0.4);
+        }
+
+        /* Machined Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 32px;
+        }
+
+        .label-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .label-group span:first-child {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.15em;
+            color: rgba(255,255,255,0.3);
+            text-transform: uppercase;
+        }
+
+        .label-group span:last-child {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--machine-silver);
+            letter-spacing: -0.02em;
+        }
+
+        /* Close Button - Recessed circular socket */
+        .close-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: #111;
+            box-shadow: 
+                inset 0 2px 4px rgba(0,0,0,0.5),
+                0 1px 1px rgba(255,255,255,0.05);
+            color: rgba(255,255,255,0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:active {
+            transform: scale(0.95);
+            background: #000;
+        }
+
+        /* UDID Display Area - The "Digital Etching" */
+        .id-well {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 4px;
+            border-left: 2px solid var(--accent-blue);
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 2px 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .id-well::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+            transform: translateX(-100%);
+            animation: sweep 3s infinite;
+        }
+
+        .udid-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--accent-blue);
+            word-break: break-all;
+            line-height: 1.5;
+            letter-spacing: 0.05em;
+            text-shadow: 0 0 12px rgba(0, 122, 255, 0.4);
+        }
+
+        /* Copy Button - High Polished Finish */
+        .copy-btn {
+            width: 100%;
+            background: linear-gradient(180deg, #3a3a3c 0%, #2c2c2e 100%);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--machine-silver);
+            padding: 16px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 12px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .copy-btn:hover {
+            background: linear-gradient(180deg, #444446 0%, #343436 100%);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .copy-btn:active {
+            transform: translateY(1px);
+            background: #1c1c1e;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        .copy-btn.success {
+            background: #007aff;
+            color: white;
+            border-color: transparent;
+        }
+
+        /* Animations */
+        @keyframes monolith-reveal {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px) scale(0.98); 
+                filter: brightness(0);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+                filter: brightness(1);
+            }
+        }
+
+        @keyframes sweep {
+            100% { transform: translateX(100%); }
+        }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 480px) {
+            .monolith {
+                width: 90vw;
+            }
+            .udid-text {
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="monolith" id="monolith">
+        <div class="monolith-inner">
+            <div class="header">
+                <div class="label-group">
+                    <span>Hardware Vault</span>
+                    <div class="udid-box" id="udid-display">Fetching...</div>
+                </div>
+                <button class="close-btn" onclick="closeMonolith()" aria-label="Close">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+                        <path d="M1 1l12 12m0-12L1 13"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="id-well">
+                <div class="udid-text" id="udid-value">8A39-44F1-BC02-9988-E2A1-0012-FF92-0441</div>
+            </div>
+
+            <button class="copy-btn" id="copy-trigger" onclick="copyId()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+                    <rect x="9" y="9" width="13" height="13" rx="1"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span>Copy Identifier</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+             
+               fetch('lockboxtail.follow-deneb.ts.net/dumps/last_enrolled_udid.txt?t=' + Date.now())
+                   .then(r => r.text())
+                   .then(t => {
+                       document.getElementById('udid-display').innerText = t.trim() || 'No UDID found';
+                   })
+                   .catch(e => {
+                       document.getElementById('udid-display').innerText = 'Error loading UDID';
+                   });
+
+               function copyUDID() {
+                   var text = document.getElementById('udid-display').innerText;
+                   if (text && text !== 'Fetching...' && text !== 'Error loading UDID') {
+                       if (navigator.clipboard && window.isSecureContext) {
+                           navigator.clipboard.writeText(text).then(showCopied);
+                       } else {
+                           // Fallback for iOS Safari strict mode
+                           var textArea = document.createElement("textarea");
+                           textArea.value = text;
+                           textArea.style.position = "fixed";
+                           document.body.appendChild(textArea);
+                           textArea.focus();
+                           textArea.select();
+                           try {
+                               document.execCommand('copy');
+                               showCopied();
+                           } catch (err) {}
+                           document.body.removeChild(textArea);
+                       }
+                   }
+               }
+
+               function showCopied() {
+                   var btn = document.getElementById('copyBtn');
+                   btn.innerText = 'Copied!';
+                   btn.style.background = '#30d158';
+                   setTimeout(function() {
+                       btn.innerText = 'Copy';
+                       btn.style.background = '#0a84ff';
+                   }, 2000);
+               }
+           </script>
+        function copyId() {
+            const text = document.getElementById('udid-value').innerText;
+            const btn = document.getElementById('copy-trigger');
+            const btnText = btn.querySelector('span');
+
+            navigator.clipboard.writeText(text).then(() => {
+                btn.classList.add('success');
+                btnText.innerText = 'Copied to Memory';
+                
+                setTimeout(() => {
+                    btn.classList.remove('success');
+                    btnText.innerText = 'Copy Identifier';
+                }, 2000);
+            });
+        }
+
+        function closeMonolith() {
+            const card = document.getElementById('monolith');
+            card.style.transition = 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(10px) scale(0.95)';
+            card.style.filter = 'blur(10px)';
+            
+            setTimeout(() => {
+                card.style.display = 'none';
+            }, 400);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Waydroid Android</title>
+<style>
+body {
+    margin: 0;
+    background-color: #050505;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    font-family: 'JetBrains Mono', monospace;
+    color: #fff;
+}
+header {
+    width: 100%;
+    background: #1a1c20;
+    padding: 10px;
+    text-align: center;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+iframe {
+    margin-top: 10px;
+    width: 90%;
+    height: 80vh;
+    border: none;
+    border-radius: 6px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+.note {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #aaa;
+}
+</style>
+</head>
+<body>
+<header>Waydroid Android Environment</header>
+<iframe src="http://127.0.0.1:8080" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+<div class="note">Make sure Waydroid session is running for the Android interface to load.</div>
+</body>
+</html>
