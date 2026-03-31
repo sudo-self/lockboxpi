@@ -66,7 +66,7 @@ bot = telebot.TeleBot(TOKEN)
 from telebot.types import MenuButtonWebApp, WebAppInfo
 try:
     bot.set_chat_menu_button(
-        menu_button=MenuButtonWebApp(type="web_app", text="🖥️ Dashboard", web_app=WebAppInfo(url="https://lbpi.jessejesse.com/"))
+        menu_button=MenuButtonWebApp(type="web_app", text="LockboxPi", web_app=WebAppInfo(url="https://lbpi.jessejesse.com/"))
     )
 except Exception as e:
     print(f"Failed to set menu button: {e}")
@@ -87,7 +87,7 @@ def get_header_text() -> str:
         disk_str = f"{free_gb}GB"
     except Exception:
         disk_str = "N/A"
-    return f"<b>🍓pi4  🌡️{temp_str}  💽{disk_str}</b>"
+    return f"<b>🍓trixie  🌡️{temp_str}  💽{disk_str}</b>"
 
 
 def is_allowed(message) -> bool:
@@ -291,12 +291,12 @@ def menu_main(chat_id=0):
         markup.add(InlineKeyboardButton("📱 Open Web Dashboard", web_app=WebAppInfo(url="https://lbpi.jessejesse.com/")))
     # Add the remaining standard menu buttons
     markup.add(
-        InlineKeyboardButton("ADB & Device", callback_data="menu_adb"),
-        InlineKeyboardButton("MTK Tools", callback_data="menu_mtk"),
-        InlineKeyboardButton("LockKnife", callback_data="menu_knife"),
-        InlineKeyboardButton("System / Pi", callback_data="menu_system"),
-        InlineKeyboardButton("Files & Dumps", callback_data="menu_files"),
-        InlineKeyboardButton("Media & Misc", callback_data="menu_misc"),
+        InlineKeyboardButton("Android", callback_data="menu_adb"),
+        InlineKeyboardButton("MediaTek", callback_data="menu_mtk"),
+        InlineKeyboardButton("Lock Knife", callback_data="menu_knife"),
+        InlineKeyboardButton("Linux Admin", callback_data="menu_system"),
+        InlineKeyboardButton("File Manager", callback_data="menu_files"),
+        InlineKeyboardButton("Media Tools", callback_data="menu_misc"),
         InlineKeyboardButton("✕ Close", callback_data="menu_close")
     )
     return markup
@@ -514,7 +514,7 @@ def handle_dropzone(message):
     except Exception:
         local_ip = "127.0.0.1"
 
-    url = f"http://{local_ip}:8084"
+    url = f"http://lockboxtail.follow-deneb.ts.net:8084"
     qr = qrcode.QRCode(version=1, box_size=10, border=5)
     qr.add_data(url)
     qr.make(fit=True)
@@ -942,7 +942,7 @@ def cb_samsung(call):
     elif call.data == "sam_plugged":
         markup = _kb(("I am using Chrome", "sam_chrome"), ("Cancel", "sam_cancel"))
         bot.edit_message_text(
-            "Open <code>https://10.0.0.132/dumps/frp.html</code>\n\n<b>Chrome only!</b>",
+            "Open <code>https://lbpi.jessejesse.com/dumps/frp.html</code>\n\n<b>Chrome only!</b>",
             call.message.chat.id, call.message.message_id,
             reply_markup=markup, parse_mode="HTML",
         )
@@ -951,7 +951,7 @@ def cb_samsung(call):
         markup = _kb(("1. Initialized", "sam_init"), ("Cancel", "sam_cancel"))
         try:
             bot.delete_message(call.message.chat.id, call.message.message_id)
-            with open(os.path.join(DUMPS_DIR, "jesse.gif"), "rb") as f:
+            with open(os.path.join(DUMPS_DIR, "frp11.png"), "rb") as f:
                 bot.send_photo(call.message.chat.id, f, caption="Select 'initialize port'", reply_markup=markup)
         except Exception:
             bot.send_message(call.message.chat.id, "Select 'initialize port'", reply_markup=markup)
@@ -959,7 +959,7 @@ def cb_samsung(call):
     elif call.data == "sam_init":
         try:
             bot.delete_message(call.message.chat.id, call.message.message_id)
-            img = "photo_AgACAgEAAxkBAAIB52m6GTp9pjC4-YQnUbxzqjb9DMpBAAIlDGsbf1_QRYQfj61bd7QAAQEAAwIAA3kAAzoE.jpg"
+            img = "frp12.png"
             with open(os.path.join(DUMPS_DIR, img), "rb") as f:
                 bot.send_photo(call.message.chat.id, f, caption="Follow sequence, then handshake.")
         except Exception:
