@@ -490,7 +490,16 @@ if __name__ == '__main__':
     subprocess.run(["pkill", "-9", "-f", "telegram_bot.py"])
     try:
         from telegram_bot import bot 
-        bot_thread = threading.Thread(target=bot.infinity_polling, kwargs={'skip_pending':True})
+        
+        def run_bot():
+            while True:
+                try:
+                    bot.infinity_polling(skip_pending=True)
+                except Exception as e:
+                    logging.error(f"Bot polling error: {e}")
+                    time.sleep(5)
+                    
+        bot_thread = threading.Thread(target=run_bot)
         bot_thread.daemon = True
         bot_thread.start()
         logging.info("--- TELEGRAM BOT ENGINE STARTED ---")

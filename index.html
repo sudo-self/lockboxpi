@@ -4,32 +4,58 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LockboxPi | Tectonic Utility</title>
-    <!-- Favicon / Icons -->
-    <link rel="icon" href="/dumps/icons/favicon.ico" sizes="any">
-    <link rel="apple-touch-icon" href="/dumps/icons/apple-touch-icon.png">
-
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;900&family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --base-crust: #0f1012;
-            --plate-surface: #1a1c20;
-            --plate-highlight: #282a2f;
-            --plate-shadow: #08090a;
+            --base-crust: #0c0e10;
+            --plate-surface: #181a1e;
+            --plate-highlight: #252830;
+            --plate-shadow: #06070a;
             --accent-core: #ff9d00;
-            --accent-glow: rgba(255, 157, 0, 0.3);
+            --accent-glow: rgba(255, 157, 0, 0.25);
             --danger-core: #ff4444;
             --safe-core: #00ffa2;
             --cf-orange: #f38020;
             --indigo-400: #818cf8;
             --indigo-300: #a5b4fc;
-            --text-primary: #e2e4e9;
-            --text-dim: #5d626f;
-            --bevel-outer: 2px 2px 5px var(--plate-shadow), -1px -1px 3px var(--plate-highlight);
-            --bevel-inner: inset 2px 2px 4px var(--plate-shadow), inset -1px -1px 2px var(--plate-highlight);
+            --text-primary: #dde0e8;
+            --text-dim: #4e5360;
+            --text-mid: #7a8090;
+            --bevel-outer:
+                2px 2px 6px var(--plate-shadow),
+                -1px -1px 3px rgba(255,255,255,0.04);
+            --bevel-inner:
+                inset 2px 2px 5px var(--plate-shadow),
+                inset -1px -1px 2px rgba(255,255,255,0.03);
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
+            --transition-fast: 80ms cubic-bezier(0.2, 0, 0.4, 1);
+            --transition-std: 200ms cubic-bezier(0.2, 0, 0.4, 1);
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--base-crust); font-family: 'Inter', sans-serif; color: var(--text-primary); overflow: hidden; display: flex; justify-content: center; align-items: center; }
+        *, *::before, *::after {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+        }
 
+        html, body {
+            width: 100%; height: 100%;
+            background: var(--base-crust);
+            font-family: 'Inter', system-ui, sans-serif;
+            color: var(--text-primary);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── Device Frame ── */
         .device-frame {
             width: 480px; height: 320px;
             background: var(--plate-surface);
@@ -38,166 +64,406 @@
             grid-template-columns: 115px 1fr;
             grid-template-rows: 45px 1fr;
             padding: 4px;
-            border-radius: 8px;
-            box-shadow: 0 0 0 1px var(--plate-highlight), 10px 10px 30px rgba(0,0,0,0.5);
+            border-radius: var(--radius-lg);
+            box-shadow:
+                0 0 0 1px var(--plate-highlight),
+                0 0 0 2px rgba(0,0,0,0.6),
+                12px 16px 40px rgba(0,0,0,0.6),
+                0 1px 0 rgba(255,255,255,0.04) inset;
         }
 
+        /* Subtle CRT scanline */
         .crt-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
-            background-size: 100% 2px;
-            pointer-events: none; z-index: 100; opacity: 0.1;
+            position: absolute; inset: 0;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0px,
+                transparent 1px,
+                rgba(0,0,0,0.07) 1px,
+                rgba(0,0,0,0.07) 2px
+            );
+            pointer-events: none; z-index: 100;
+            border-radius: inherit;
         }
 
+        /* ── Header ── */
         header {
-            grid-column: 1 / span 2; display: flex; align-items: center; justify-content: space-between;
-            padding: 0 17px; background: var(--base-crust); margin: 4px; border-radius: 4px;
-            box-shadow: var(--bevel-inner); font-family: 'JetBrains Mono'; font-size: 15px;
+            grid-column: 1 / span 2;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 16px;
+            background: var(--base-crust);
+            margin: 4px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--bevel-inner);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            letter-spacing: 0.3px;
+            border: 1px solid rgba(255,255,255,0.03);
         }
 
-        .brand { display: flex; align-items: center; color: var(--safe-core); }
+        .brand {
+            display: flex; align-items: center; gap: 8px;
+            color: var(--safe-core);
+            font-weight: 700;
+        }
         .brand a { color: inherit; text-decoration: none; }
-        .brand img { width: 20px; height: 20px; margin-right: 8px; }
-        .dynamic-ip { color: var(--safe-core); font-weight: 900; }
+        .brand img { width: 18px; height: 18px; object-fit: contain; }
 
-        nav { display: flex; flex-direction: column; gap: 7px; padding: 4px; }
+        .dynamic-ip {
+            color: var(--safe-core);
+            font-weight: 900;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── Nav ── */
+        nav {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 4px;
+        }
+
         .nav-item {
-            flex: 1; background: var(--plate-surface); border-radius: 6px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer; box-shadow: var(--bevel-outer); transition: 0.1s;
+            flex: 1;
+            background: var(--plate-surface);
+            border-radius: var(--radius-md);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--bevel-outer);
+            transition: box-shadow var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
+            border: 1px solid transparent;
+            position: relative;
+            overflow: hidden;
         }
-        .nav-item.active { box-shadow: var(--bevel-inner); background-color: var(--base-crust); border: 1px solid rgba(255, 157, 0, 0.6); }
-        .nav-item svg { width: 30px; fill: var(--text-dim); margin-bottom: 2px; }
-        .nav-item.active svg { fill: var(--accent-core); filter: drop-shadow(0 0 5px var(--accent-glow)); }
-        .nav-item.active .nav-icon-img { filter: drop-shadow(0 0 5px var(--accent-glow)) !important; opacity: 1; }
-        .nav-icon-img { opacity: 0.5; }
-        .nav-item span { font-size: 13px; font-weight: 900; color: var(--text-dim); }
 
+        .nav-item::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0);
+            transition: background var(--transition-fast);
+            border-radius: inherit;
+        }
+
+        .nav-item:hover::after { background: rgba(255,255,255,0.03); }
+        .nav-item:active { transform: scale(0.97); }
+
+        .nav-item.active {
+            box-shadow: var(--bevel-inner);
+            background-color: var(--base-crust);
+            border-color: rgba(255, 157, 0, 0.5);
+        }
+
+        .nav-item svg {
+            width: 22px; height: 22px;
+            fill: var(--text-dim);
+            transition: fill var(--transition-std);
+            margin-bottom: 2px;
+        }
+
+        .nav-item.active svg {
+            fill: var(--accent-core);
+        }
+
+        .nav-item.active .nav-icon-img { opacity: 1; }
+        .nav-icon-img { opacity: 0.5; transition: opacity var(--transition-std); }
+
+        .nav-item span {
+            font-size: 9px;
+            font-weight: 900;
+            color: var(--text-dim);
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.8px;
+            transition: color var(--transition-std);
+        }
+        .nav-item.active span { color: var(--accent-core); }
+
+        /* USB indicator */
         .usb-indicator {
-            height: 39px; display: flex; align-items: center; justify-content: center;
-            gap: 8px; font-size: 13px; font-family: 'JetBrains Mono'; font-weight: 900; color: var(--text-dim);
-            margin-top: 5px; border-top: 1px solid var(--plate-highlight); padding-top: 5px;
+            height: 36px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 900;
+            color: var(--text-dim);
+            margin-top: 4px;
+            border-top: 1px solid rgba(255,255,255,0.04);
+            padding-top: 4px;
+            letter-spacing: 0.5px;
         }
-        .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent-core); transition: 0.3s; }
-        .dot.active { background: var(--safe-core); box-shadow: 0 0 10px var(--safe-core); }
 
-        main { background: var(--base-crust); margin: 4px; border-radius: 6px; box-shadow: var(--bevel-inner); padding: 12px; overflow: hidden; }
+        .dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: var(--text-dim);
+            transition: background var(--transition-std), box-shadow var(--transition-std);
+        }
+        .dot.active {
+            background: var(--safe-core);
+            box-shadow: 0 0 6px var(--safe-core), 0 0 12px rgba(0,255,162,0.3);
+        }
+
+        /* ── Main Panel ── */
+        main {
+            background: var(--base-crust);
+            margin: 4px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--bevel-inner);
+            padding: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.02);
+        }
+
         .tab-panel { display: none; height: 100%; flex-direction: column; }
         .tab-panel.active { display: flex; }
 
+        /* ── Tectonic Card ── */
         .tectonic-card {
             background: var(--plate-surface);
-            border-radius: 8px; box-shadow: var(--bevel-outer);
-            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            margin-bottom: 10px; border: 1px solid var(--plate-highlight);
-        }
-
-        .status-orb {
-            width: 85px; height: 85px; border-radius: 50%; background: var(--base-crust);
-            box-shadow: var(--bevel-inner); display: flex; align-items: center; justify-content: center;
-            margin-bottom: 8px; transition: 0.3s; cursor: pointer;
-        }
-        .status-orb.unlocked { border: 3px solid var(--safe-core); box-shadow: var(--bevel-inner), 0 0 15px rgba(0, 255, 162, 0.2); }
-        .status-orb.locked { border: 3px solid var(--danger-core); }
-
-        .data-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; margin-bottom: 6px; }
-        .data-cell { background: var(--plate-surface); padding: 8px 5px; border-radius: 6px; box-shadow: var(--bevel-outer); display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .data-cell.action { cursor: pointer; border: 1px solid var(--accent-glow); }
-        .data-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 900; margin-bottom: 4px; text-align: center; }
-        .data-value { font-family: 'JetBrains Mono'; font-size: 15px; color: var(--indigo-400); font-weight: 700; }
-        .data-value.accent { color: var(--accent-core); }
-
-        .github-link-btn {
-            background: var(--plate-surface);
-            padding: 8px;
-            border-radius: 6px;
+            border-radius: var(--radius-lg);
             box-shadow: var(--bevel-outer);
+            flex: 1;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            text-decoration: none;
-            font-family: 'JetBrains Mono';
-            font-size: 12px;
-            font-weight: 900;
-            border: 1px solid var(--plate-highlight);
+            margin-bottom: 8px;
+            border: 1px solid rgba(255,255,255,0.04);
+            position: relative;
+            overflow: hidden;
         }
-        .bling-text {
+
+        /* Very subtle top edge highlight */
+        .tectonic-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 10%; right: 10%;
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.06), transparent);
+        }
+
+        /* ── Status Orb ── */
+        .status-orb {
+            width: 85px; height: 85px;
+            border-radius: 50%;
+            background: var(--base-crust);
+            box-shadow: var(--bevel-inner);
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: transform var(--transition-std), box-shadow var(--transition-std);
+        }
+        .status-orb:hover { transform: scale(1.03); }
+        .status-orb:active { transform: scale(0.97); }
+
+        .status-orb.unlocked {
+            border: 2px solid var(--safe-core);
+            box-shadow: var(--bevel-inner), 0 0 14px rgba(0, 255, 162, 0.18);
+        }
+        .status-orb.locked {
+            border: 2px solid var(--danger-core);
+        }
+
+        /* ── Data Grid ── */
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+
+        .data-cell {
+            background: var(--plate-surface);
+            padding: 7px 4px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--bevel-outer);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid transparent;
+            transition: border-color var(--transition-std), box-shadow var(--transition-fast);
+        }
+
+        .data-cell.action {
+            cursor: pointer;
+            border-color: rgba(255, 157, 0, 0.2);
+        }
+        .data-cell.action:hover { border-color: rgba(255, 157, 0, 0.45); }
+        .data-cell.action:active { box-shadow: var(--bevel-inner); transform: translateY(1px); }
+
+        .data-label {
+            font-size: 9px;
             color: var(--text-dim);
+            text-transform: uppercase;
+            font-weight: 900;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.8px;
+            margin-bottom: 4px;
+            text-align: center;
         }
+
+        .data-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--indigo-400);
+            font-weight: 700;
+            line-height: 1;
+        }
+        .data-value.accent { color: var(--accent-core); }
+
+        /* ── Link Buttons ── */
+        .github-link-btn {
+            background: var(--plate-surface);
+            padding: 0 8px;
+            height: 34px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--bevel-outer);
+            display: flex; align-items: center; justify-content: center; gap: 7px;
+            text-decoration: none;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 900;
+            border: 1px solid rgba(255,255,255,0.04);
+            cursor: pointer;
+            transition: box-shadow var(--transition-fast), transform var(--transition-fast), border-color var(--transition-std);
+            color: var(--text-mid);
+        }
+
+        .github-link-btn:hover { border-color: rgba(255,255,255,0.1); }
         .github-link-btn:active { box-shadow: var(--bevel-inner); transform: translateY(1px); }
-        .github-link-btn svg { fill: var(--text-dim); transition: fill 0.3s; }
-        .github-link-btn:hover svg { fill: #ffffff; }
+        .github-link-btn svg { fill: var(--text-dim); transition: fill var(--transition-std); width: 15px; height: 15px; }
+        .github-link-btn:hover svg { fill: var(--text-primary); }
 
         .helper-text {
-            font-family: 'JetBrains Mono';
-            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
             color: var(--indigo-300);
-            margin-top: 10px;
+            margin-top: 8px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.6px;
             text-align: center;
+            opacity: 0.7;
         }
 
-        .terminal { flex: 1; background: #050505; border-radius: 4px; padding: 12px; font-family: 'JetBrains Mono'; font-size: 13px; color: #d1d5db; overflow-y: auto; box-shadow: inset 0 2px 10px #000; }
-        .input-wrap { display: grid; grid-template-columns: 1fr 65px 75px; gap: 6px; margin-top: 10px; height: 49px; }
-        
-        input {
-            background: var(--base-crust); border: none; box-shadow: var(--bevel-inner);
-            border-radius: 4px; padding: 0 12px; color: var(--text-primary);
-            font-family: 'JetBrains Mono'; font-size: 15px; outline: none;
+        /* ── Terminal ── */
+        .terminal {
+            flex: 1;
+            background: #040506;
+            border-radius: var(--radius-sm);
+            padding: 10px 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: #c8cdd8;
+            overflow-y: auto;
+            box-shadow: inset 0 2px 12px rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.03);
+            line-height: 1.6;
+        }
+
+        .terminal::-webkit-scrollbar { width: 3px; }
+        .terminal::-webkit-scrollbar-track { background: transparent; }
+        .terminal::-webkit-scrollbar-thumb { background: var(--plate-highlight); border-radius: 2px; }
+
+        /* ── Input Row ── */
+        .input-wrap {
+            display: grid;
+            grid-template-columns: 1fr 60px 72px;
+            gap: 5px;
+            margin-top: 8px;
+            height: 34px;
+        }
+
+        input[type="text"] {
+            background: var(--base-crust);
+            border: 1px solid rgba(255,255,255,0.04);
+            box-shadow: var(--bevel-inner);
+            border-radius: var(--radius-sm);
+            padding: 0 10px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            outline: none;
             height: 100%; width: 100%;
             pointer-events: auto !important;
+            transition: border-color var(--transition-std);
         }
+        input[type="text"]:focus {
+            border-color: rgba(255, 157, 0, 0.4);
+        }
+        input[type="text"]::placeholder { color: var(--text-dim); }
 
         select {
-            background: var(--plate-surface); box-shadow: var(--bevel-outer); border: none;
-            border-radius: 4px; color: var(--text-primary); font-weight: 900;
-            font-size: 13px; cursor: pointer; padding: 0; width: 100%; height: 100%;
-            font-family: 'JetBrains Mono'; outline: none; appearance: none; -webkit-appearance: none;
+            background: var(--plate-surface);
+            box-shadow: var(--bevel-outer);
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: var(--radius-sm);
+            color: var(--text-mid);
+            font-weight: 900;
+            font-size: 11px;
+            cursor: pointer;
+            width: 100%; height: 100%;
+            font-family: 'JetBrains Mono', monospace;
+            outline: none;
+            appearance: none; -webkit-appearance: none;
             text-align: center;
+            letter-spacing: 0.5px;
+            transition: box-shadow var(--transition-fast), transform var(--transition-fast);
         }
         select:active { box-shadow: var(--bevel-inner); transform: translateY(1px); }
-        
+
         .btn-action {
-            background: var(--plate-surface); box-shadow: var(--bevel-outer); border: none;
-            border-radius: 4px; color: var(--text-primary); font-weight: 900;
-            font-size: 13px; cursor: pointer; padding: 0; width: 100%; height: 100%;
+            background: var(--plate-surface);
+            box-shadow: var(--bevel-outer);
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: var(--radius-sm);
+            color: var(--text-mid);
+            font-weight: 900;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            width: 100%; height: 100%;
             display: flex; align-items: center; justify-content: center;
+            transition: box-shadow var(--transition-fast), transform var(--transition-fast), border-color var(--transition-std), color var(--transition-std);
         }
+        .btn-action:hover { color: var(--text-primary); border-color: rgba(255,255,255,0.1); }
         .btn-action:active { box-shadow: var(--bevel-inner); transform: translateY(1px); }
 
         .btn-xplt {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%23ff9d00'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-            background-position: right 6px center;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='%23ff9d00'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+            background-position: right 5px center;
             background-repeat: no-repeat;
-            border: 1px solid var(--accent-glow) !important;
-            padding: 0 15px !important;
+            border-color: rgba(255, 157, 0, 0.3) !important;
             color: var(--accent-core) !important;
-            text-align: center;
-            text-align-last: center;
+            padding-right: 16px !important;
         }
 
-        .lock-label { text-align: center; width: 100%; }
-
-        #screensaver {
-            position: fixed;
-            top: 0;
-            left: 0;
+        .lock-label {
+            text-align: center;
             width: 100%;
-            height: 100%;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            color: var(--text-primary);
+        }
+
+        /* ── Screensaver ── */
+        #screensaver {
+            position: fixed; inset: 0;
             background: #000;
             z-index: 9999;
             display: none;
             justify-content: center;
             align-items: center;
         }
-
-        #screensaver img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
+        #screensaver img { max-width: 100%; max-height: 100%; object-fit: contain; }
     </style>
 </head>
 <body>
@@ -208,10 +474,10 @@
 
     <div class="device-frame">
         <div class="crt-overlay"></div>
-        
+
         <header>
             <div class="brand">
-                <div id="connStatus" class="dot" style="margin-right: 8px; width: 6px; height: 6px;"></div>
+                <div id="connStatus" class="dot" style="width:6px;height:6px;"></div>
                 <img src="/dumps/pi.webp" alt="Pi">
                 <span id="brand-text">lockboxpi.local</span>
             </div>
@@ -219,7 +485,8 @@
         </header>
 
         <nav>
-            <div class="nav-item active" onclick="switchTab('adb', this)" style="background: url('/dumps/gif-2.gif'); background-size: cover; background-position: center; border: none !important;">
+            <div class="nav-item active" onclick="switchTab('adb', this)"
+                 style="background: url('/dumps/gif-2.gif') center/cover; border: none !important;">
             </div>
             <div class="nav-item" onclick="switchTab('mtk', this)">
                 <svg viewBox="0 0 24 24"><path d="M13 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V9l-7-7z"/></svg>
@@ -240,26 +507,31 @@
         </nav>
 
         <main>
+            <!-- ADB TAB -->
             <div id="adb" class="tab-panel active">
-                <div class="tectonic-card" style="flex-direction: row; gap: 30px;">
+                <div class="tectonic-card" style="flex-direction: row; gap: 28px;">
                     <div style="display: flex; flex-direction: column; align-items: center;">
-                        <div id="lockOrb" class="status-orb" onclick="configureWiFi()" style="overflow: hidden; background: #fff; border: 3px solid var(--danger-core); padding: 5px;">
-                            <img id="qr-local" src="" style="width: 100%; height: 100%; image-rendering: pixelated;">
+                        <div id="lockOrb" class="status-orb" onclick="configureWiFi()"
+                             style="overflow: hidden; background: #fff; border: 2px solid var(--danger-core); padding: 5px;">
+                            <img id="qr-local" src="" style="width:100%;height:100%;image-rendering:pixelated;">
                         </div>
-                        <div class="lock-label" id="lockStatus" style="color:#ffffff; font-size:15px; font-weight:900; letter-spacing: 1.5px;">lockboxpi.local</div>
+                        <div class="lock-label" id="lockStatus">lockboxpi.local</div>
                     </div>
-                    <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer;" onclick="window.open('https://t.me/lockboxtrixie_bot', '_blank')">
-                        <div class="status-orb" style="width: 80px; height: 80px; overflow: hidden; background: #fff; border: 3px solid cyan; padding: 5px; margin-bottom: 8px;">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://t.me/lockboxtrixie_bot&margin=2" style="width: 100%; height: 100%; image-rendering: pixelated;">
+                    <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;"
+                         onclick="window.open('https://t.me/lockboxtrixie_bot','_blank')">
+                        <div class="status-orb"
+                             style="width:80px;height:80px;overflow:hidden;background:#fff;border:2px solid cyan;padding:5px;margin-bottom:8px;">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://t.me/lockboxtrixie_bot&margin=2"
+                                 style="width:100%;height:100%;image-rendering:pixelated;">
                         </div>
-                        <div class="lock-label" style="color:#ffffff; font-size:15px; font-weight:900; letter-spacing: 1.5px;">trixie</div>
+                        <div class="lock-label">trixie</div>
                     </div>
                 </div>
 
                 <div class="data-grid">
                     <div class="data-cell action" onclick="window.location.href='http://10.0.0.132:8084'">
                         <div class="data-label">LOGIN</div>
-                        <div class="data-value" style="color: #ffcc00">
+                        <div class="data-value" style="color:#ffcc00;">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
                             </svg>
@@ -267,75 +539,86 @@
                     </div>
                     <div class="data-cell">
                         <div class="data-label">TEMP</div>
-                        <div class="data-value" id="val-temp" style="color: var(--danger-core)">--.-°F</div>
+                        <div class="data-value" id="val-temp" style="color:var(--danger-core)">--°F</div>
                     </div>
                     <div class="data-cell">
                         <div class="data-label">FREE</div>
-                        <div class="data-value" id="val-storage" style="color: var(--safe-core)">--GB</div>
+                        <div class="data-value" id="val-storage" style="color:var(--safe-core)">--GB</div>
                     </div>
                     <div class="data-cell">
                         <div class="data-label">UPTIME</div>
-                        <div class="data-value" id="val-uptime" style="color: var(--indigo-300)">--h --m</div>
+                        <div class="data-value" id="val-uptime" style="color:var(--indigo-300)">--h</div>
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 6px;">
-                    <a href="https://GitHub.com/sudo-self/lockboxpi" target="_blank" class="github-link-btn" style="flex: 1; justify-content: center; align-items: center;">
-                        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                <div style="display:flex;gap:5px;">
+                    <a href="https://GitHub.com/sudo-self/lockboxpi" target="_blank"
+                       class="github-link-btn" style="flex:1;">
+                        <svg width="15" height="15" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
                     </a>
-                    <a href="https://x.com/lightfighter719" target="_blank" class="github-link-btn" style="flex: 1; justify-content: center; align-items: center;">
-                        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    <a href="https://x.com/lightfighter719" target="_blank"
+                       class="github-link-btn" style="flex:1;">
+                        <svg width="15" height="15" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                     </a>
-                    <a href="https://t.me/lockboxtrixie_bot" target="_blank" class="github-link-btn" style="flex: 1; justify-content: center; align-items: center;">
-                        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                    <a href="https://t.me/lockboxtrixie_bot" target="_blank"
+                       class="github-link-btn" style="flex:1;">
+                        <svg width="15" height="15" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
                     </a>
-                    <div onclick="toggleTunnel()" class="github-link-btn" style="flex: 1; justify-content: center; align-items: center; cursor: pointer;">
-                        <svg id="tunnelIcon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; fill: none !important; color: var(--text-dim); transition: color 0.3s;"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
-                        <span id="tunnelText" style="display: none;"></span>
+                    <div onclick="toggleTunnel()" class="github-link-btn" style="flex:1;">
+                        <svg id="tunnelIcon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                             stroke-linecap="round" stroke-linejoin="round"
+                             style="width:15px;height:15px;fill:none!important;color:var(--text-dim);transition:color var(--transition-std);">
+                            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+                        </svg>
+                        <span id="tunnelText" style="display:none;"></span>
                     </div>
                 </div>
             </div>
 
+            <!-- MTK TAB -->
             <div id="mtk" class="tab-panel">
                 <div class="tectonic-card">
-                    <div class="data-label" style="font-size:13px">MTK ENGINE</div>
-                    <div id="mtkStatus" class="data-value accent" style="margin:20px 0; font-size:20px;">DISCONNECTED</div>
-                    <button class="btn-action" style="height:54px; width:80%" onclick="runMtk('printgpt')">READ GPT TABLE</button>
+                    <div class="data-label" style="font-size:11px;margin-bottom:4px;">MTK ENGINE</div>
+                    <div id="mtkStatus" class="data-value accent" style="margin:16px 0;font-size:18px;">DISCONNECTED</div>
+                    <button class="btn-action" style="height:44px;width:75%;font-size:12px;" onclick="runMtk('printgpt')">READ GPT TABLE</button>
                     <div class="helper-text">Hold V UP + V Down and connect the USB</div>
                 </div>
             </div>
 
+            <!-- KNIFE TAB -->
             <div id="knife" class="tab-panel">
                 <div class="tectonic-card">
-                    <div class="data-label" style="font-size:13px">FORENSIC MODULES</div>
-                    <div id="lkStatus" class="data-value accent" style="margin:10px 0; font-size:20px;">READY</div>
-                    <div style="display:flex; gap:15px; margin-bottom: 15px; width: 80%;">
-                        <button class="btn-action" style="height:45px; padding:0 20px; flex: 1" onclick="runLk('pull-pattern')">PULL KEY</button>
-                        <button class="btn-action" style="height:45px; padding:0 20px; flex: 1" onclick="runLk('dump-system')">DUMP SYS</button>
+                    <div class="data-label" style="font-size:11px;margin-bottom:4px;">FORENSIC MODULES</div>
+                    <div id="lkStatus" class="data-value accent" style="margin:8px 0;font-size:18px;">READY</div>
+                    <div style="display:flex;gap:10px;margin-bottom:12px;width:80%;">
+                        <button class="btn-action" style="height:40px;flex:1;font-size:12px;" onclick="runLk('pull-pattern')">PULL KEY</button>
+                        <button class="btn-action" style="height:40px;flex:1;font-size:12px;" onclick="runLk('dump-system')">DUMP SYS</button>
                     </div>
                     <div class="helper-text">Ensure ADB is authorized on target device</div>
                 </div>
             </div>
 
+            <!-- SAMSUNG TAB -->
             <div id="samsung" class="tab-panel">
                 <div class="tectonic-card">
-                    <div class="data-label" style="font-size:13px">SAMSUNG FRP MODULE</div>
-                    <div id="samStatus" class="data-value accent" style="margin:10px 0; font-size:20px;">DISCONNECTED</div>
-                    <div style="display:flex; gap:15px; margin-bottom: 15px; width: 90%;">
-                        <button class="btn-action" style="height:45px; padding:0 10px; flex: 1" onclick="runObsidian()">AUTO_BYPASS</button>
-                        <button class="btn-action" style="height:45px; padding:0 10px; flex: 1" onclick="window.open('./dumps/frp.html', '_blank')">INTERACTIVE</button>
+                    <div class="data-label" style="font-size:11px;margin-bottom:4px;">SAMSUNG FRP MODULE</div>
+                    <div id="samStatus" class="data-value accent" style="margin:8px 0;font-size:18px;">DISCONNECTED</div>
+                    <div style="display:flex;gap:10px;margin-bottom:12px;width:85%;">
+                        <button class="btn-action" style="height:40px;flex:1;font-size:12px;" onclick="runObsidian()">AUTO_BYPASS</button>
+                        <button class="btn-action" style="height:40px;flex:1;font-size:12px;" onclick="window.open('./dumps/frp.html','_blank')">INTERACTIVE</button>
                     </div>
                     <div class="helper-text">Works via Serial AT Commands and ADB</div>
                 </div>
             </div>
 
+            <!-- TERM TAB -->
             <div id="term" class="tab-panel">
                 <div class="terminal" id="termOutput"></div>
                 <div class="input-wrap">
-                    <input type="text" id="termInput" placeholder="$_ " ontouchstart="this.focus();">
+                    <input type="text" id="termInput" placeholder="$_" ontouchstart="this.focus();">
                     <button class="btn-action" onclick="pushCmd()">CMD</button>
                     <select id="cmdSelect" class="btn-xplt" onchange="injectCmd()">
-                        <option value="">XPLT</option>
+                        <option value="">&nbsp;UNIX</option>
                         <option value="lsusb">LSUSB</option>
                         <option value="whoami">WHOAMI</option>
                         <option value="uname -a">UNAME</option>
@@ -359,228 +642,173 @@
                     </select>
                 </div>
             </div>
-
-            <div id="drop" class="tab-panel">
-                <div class="tectonic-card">
-                    <div class="data-label" style="font-size:13px">SNAPDROP P2P</div>
-                    <div id="dropStatus" class="data-value accent" style="margin:20px 0; font-size:20px;">ONLINE</div>
-                    <button class="btn-action" style="height:54px; width:80%" onclick="window.open('https://' + window.location.hostname + ':443', '_blank')">LAUNCH SNAPDROP</button>
-                    <div class="helper-text">LAN / WiFi File Transfer System</div>
-                </div>
-            </div>
         </main>
     </div>
+
 <script>
-        // Use a relative path so the browser matches the current host (WAN, LAN, or Tailscale)
-        const bridgeUrl = "/api";
+    const bridgeUrl = "/api";
 
-        function switchTab(tabId, el) {
-            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            if(el) el.classList.add('active');
-        }
+    function switchTab(tabId, el) {
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        if (el) el.classList.add('active');
+    }
 
-        // WiFi Configuration Triggered by Lock Icon
-        function configureWiFi() {
-            const ssid = prompt("WIFI SSID:");
-            if (!ssid) return;
-            const psk = prompt(`PASSWORD FOR ${ssid}:`);
-            if (!psk) return;
-            const slot = prompt("SLOT (3 OR 4)?", "3");
-            if (slot !== "3" && slot !== "4") {
-                alert("INVALID SLOT");
-                return;
+    function configureWiFi() {
+        const ssid = prompt("WIFI SSID:");
+        if (!ssid) return;
+        const psk = prompt(`PASSWORD FOR ${ssid}:`);
+        if (!psk) return;
+        const slot = prompt("SLOT (3 OR 4)?", "3");
+        if (slot !== "3" && slot !== "4") { alert("INVALID SLOT"); return; }
+        logToTerm(`Configuring WiFi Slot ${slot}...`, "sys");
+        fetch(`${bridgeUrl}/wifi/connect`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ssid, psk, slot: parseInt(slot) })
+        }).then(r => r.json()).then(d => logToTerm(d.output, "sys"))
+          .catch(() => logToTerm("CONFIG FAILED", "sys"));
+    }
+
+    function logToTerm(text, type = 'cmd') {
+        const out = document.getElementById('termOutput');
+        const ln = document.createElement('div');
+        ln.style.cssText = `color:${type === 'sys' ? '#9ca3af' : 'var(--accent-core)'};margin-bottom:2px;`;
+        ln.textContent = `> ${text}`;
+        out.appendChild(ln);
+        out.scrollTop = out.scrollHeight;
+    }
+
+    function injectCmd() {
+        const sel = document.getElementById('cmdSelect');
+        if (sel.value) { document.getElementById('termInput').value = sel.value; sel.selectedIndex = 0; }
+    }
+
+    function pushCmd() {
+        const input = document.getElementById('termInput');
+        const cmd = input.value.trim();
+        if (!cmd) return;
+        logToTerm(cmd);
+        input.value = '';
+        fetch(`${bridgeUrl}/terminal/run`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ command: cmd })
+        }).then(r => r.json()).then(d => {
+            if (d.output) d.output.split('\n').forEach(l => { if (l.trim()) logToTerm(l, 'sys'); });
+        }).catch(() => logToTerm("BRIDGE OFFLINE", "sys"));
+    }
+
+    function updateDashboard() {
+        fetch(`${bridgeUrl}/stats`)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('connStatus').classList.add('active');
+            document.getElementById('header-ip').textContent = data.ip_address;
+
+            if (data.ip_address && data.ip_address !== '0.0.0.0') {
+                const qr = document.getElementById('qr-local');
+                qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=http://${data.ip_address}:8080&margin=2`;
             }
 
-            logToTerm(`Configuring WiFi Slot ${slot}...`, "sys");
-            
-            fetch(`${bridgeUrl}/wifi/connect`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ssid, psk, slot: parseInt(slot) })
-            })
-            .then(res => res.json())
-            .then(data => {
-                logToTerm(data.output, "sys");
-            })
-            .catch(() => logToTerm("CONFIG FAILED", "sys"));
-        }
+            const brandEl = document.getElementById('brand-text');
+            const brandWrapper = document.querySelector('.brand');
+            const tunnelIcon = document.getElementById('tunnelIcon');
+            const tunnelText = document.getElementById('tunnelText');
 
-        function logToTerm(text, type = 'cmd') {
-            const out = document.getElementById('termOutput');
-            const ln = document.createElement('div');
-            ln.style.color = type === 'sys' ? '#d1d5db' : 'var(--accent-core)';
-            ln.style.marginBottom = '3px';
-            ln.textContent = `> ${text}`;
-            out.appendChild(ln);
-            out.scrollTop = out.scrollHeight;
-        }
-
-        function injectCmd() {
-            const sel = document.getElementById('cmdSelect');
-            if(sel.value) {
-                document.getElementById('termInput').value = sel.value;
-                sel.selectedIndex = 0;
+            if (data.tunnel_url || window.location.hostname.includes('ts.net')) {
+                brandEl.innerHTML = `<a href="${window.location.origin}" style="color:inherit;text-decoration:none;">WAN</a>`;
+                brandWrapper.style.color = 'var(--cf-orange)';
+                if (tunnelIcon) tunnelIcon.style.color = 'var(--cf-orange)';
+                if (tunnelText) { tunnelText.textContent = 'TUN ON'; tunnelText.style.color = 'var(--cf-orange)'; }
+            } else {
+                brandEl.textContent = 'LAN';
+                brandWrapper.style.color = 'var(--safe-core)';
+                if (tunnelIcon) tunnelIcon.style.color = 'var(--text-dim)';
+                if (tunnelText) { tunnelText.textContent = 'TUN OFF'; tunnelText.style.color = 'var(--text-dim)'; }
             }
-        }
 
-        function pushCmd() {
-            const input = document.getElementById('termInput');
-            const cmd = input.value.trim();
-            if (!cmd) return;
-            logToTerm(cmd);
-            input.value = '';
-            fetch(`${bridgeUrl}/terminal/run`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ command: cmd })
-            }).then(res => res.json()).then(data => {
-                if(data.output) data.output.split('\n').forEach(line => { if(line.trim()) logToTerm(line, 'sys'); });
-            }).catch(() => logToTerm("BRIDGE OFFLINE", "sys"));
-        }
+            document.getElementById('val-temp').textContent = data.cpu_temp || '--';
+            document.getElementById('val-storage').textContent = data.storage_free || '--';
+            document.getElementById('val-uptime').textContent = data.uptime || '--';
 
-        function updateDashboard() {
-            // Using relative path ensures CORS doesn't block WAN/Tailscale hits
-            fetch(`${bridgeUrl}/stats`)
-            .then(res => res.json())
-            .then(data => {
-                const connDot = document.getElementById('connStatus');
-                connDot.classList.add('active');
-                
-                const ipEl = document.getElementById('header-ip');
-                ipEl.textContent = data.ip_address;
+            for (const [id, val] of [['mtkStatus', data.mtk_status], ['samStatus', data.serial_status]]) {
+                const el = document.getElementById(id);
+                if (el) { el.textContent = val; el.style.color = val === 'CONNECTED' ? 'var(--safe-core)' : 'var(--accent-core)'; }
+            }
 
-                // QR Code Generation for Local Access
-                if (data.ip_address && data.ip_address !== '0.0.0.0') {
-                    const qrLocal = document.getElementById('qr-local');
-                    qrLocal.src = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=http://${data.ip_address}:8080&margin=2`;
-                    qrLocal.style.display = 'block';
-                    const orbSvg = document.getElementById('lockOrb').querySelector('svg');
-                    if(orbSvg) orbSvg.style.display = 'none';
-                }
-                
-                // Toggle Branding based on Tunnel State
-                const brandWrapper = document.querySelector('.brand');
-                const brandEl = document.getElementById('brand-text');
-                const tunnelIcon = document.getElementById('tunnelIcon');
-                const tunnelText = document.getElementById('tunnelText');
-                
-                if (data.tunnel_url || window.location.hostname.includes('ts.net')) {
-                    brandEl.innerHTML = `<a href="${window.location.origin}" style="color:inherit;text-decoration:none;">WAN</a>`;
-                    brandWrapper.style.color = 'var(--cf-orange)';
-                    if (tunnelIcon) tunnelIcon.style.color = 'var(--cf-orange)';
-                    if (tunnelText) { tunnelText.textContent = 'TUN ON'; tunnelText.style.color = 'var(--cf-orange)'; }
+            const lkEl = document.getElementById('lkStatus');
+            if (lkEl) {
+                if (data.device && data.device !== 'NONE') {
+                    lkEl.textContent = "DEVICE: " + data.device;
+                    lkEl.style.color = 'var(--safe-core)';
                 } else {
-                    brandEl.textContent = 'LAN';
-                    brandWrapper.style.color = 'var(--safe-core)';
-                    if (tunnelIcon) tunnelIcon.style.color = 'var(--text-dim)';
-                    if (tunnelText) { tunnelText.textContent = 'TUN OFF'; tunnelText.style.color = 'var(--text-dim)'; }
+                    lkEl.textContent = 'READY';
+                    lkEl.style.color = 'var(--accent-core)';
                 }
-
-                // Stats Injection
-                document.getElementById('val-temp').textContent = data.cpu_temp || '--';
-                document.getElementById('val-storage').textContent = data.storage_free || '--';
-                document.getElementById('val-uptime').textContent = data.uptime || '--';
-                
-                // Hardware Status Indicators
-                const statusFields = {
-                    'mtkStatus': data.mtk_status,
-                    'samStatus': data.serial_status
-                };
-
-                for (const [id, val] of Object.entries(statusFields)) {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        el.textContent = val;
-                        el.style.color = val === 'CONNECTED' ? 'var(--safe-core)' : 'var(--accent-core)';
-                    }
-                }
-
-                const lkEl = document.getElementById('lkStatus');
-                if (lkEl) {
-                    if (data.device && data.device !== 'NONE') {
-                        lkEl.textContent = "DEVICE: " + data.device;
-                        lkEl.style.color = 'var(--safe-core)';
-                    } else {
-                        lkEl.textContent = 'READY';
-                        lkEl.style.color = 'var(--accent-core)';
-                    }
-                }
-            })
-            .catch(err => {
-                console.error("Stats check offline", err);
-                const connDot = document.getElementById('connStatus');
-                if(connDot) connDot.classList.remove('active');
-            })
-            .finally(() => {
-                // Poll every 12 seconds
-                setTimeout(updateDashboard, 12000);
-            });
-        }
-
-        // Start polling on load
-        updateDashboard();
-
-        // Forensic Tool Triggers
-        function runMtk(cmd) {
-            switchTab('term', document.querySelectorAll('.nav-item')[4]);
-            logToTerm(`MTK: ${cmd}...`);
-            fetch(`${bridgeUrl}/mtk/${cmd}`).then(res => res.json()).then(data => {
-                if(data.output) data.output.split('\n').forEach(line => logToTerm(line, 'sys'));
-            });
-        }
-
-        function runLk(cmd) {
-            switchTab('term', document.querySelectorAll('.nav-item')[4]);
-            logToTerm(`Knife: ${cmd}...`);
-            fetch(`${bridgeUrl}/lk/${cmd}`).then(res => res.json()).then(data => {
-                if(data.output) data.output.split('\n').forEach(line => logToTerm(line, 'sys'));
-            });
-        }
-
-        function runObsidian() {
-            switchTab('term', document.querySelectorAll('.nav-item')[4]);
-            logToTerm(`OBSIDIAN: Samsung FRP Bypass...`);
-            fetch(`${bridgeUrl}/obsidian/samsung-frp`).then(res => res.json()).then(data => {
-                if(data.output) data.output.split('\n').forEach(line => logToTerm(line, 'sys'));
-            }).catch(e => logToTerm("ERROR: " + e, 'sys'));
-        }
-
-        function toggleTunnel() {
-            switchTab('term', document.querySelectorAll('.nav-item')[4]);
-            logToTerm(`Toggling Tunnel Service...`);
-            fetch(`${bridgeUrl}/tunnel/toggle`, { method: 'POST' })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.output) data.output.split('\n').forEach(line => logToTerm(line, 'sys'));
-                })
-                .catch(() => logToTerm("FAILED TO TOGGLE TUNNEL", "sys"));
-        }
-
-        // Screensaver Logic
-        let screensaverTimeout;
-        const screensaverDelay = 2 * 60 * 1000; // 2 minutes
-        const screensaverEl = document.getElementById('screensaver');
-
-        function showScreensaver() {
-            if (screensaverEl) screensaverEl.style.display = 'flex';
-        }
-
-        function resetScreensaverTimer() {
-            if (screensaverEl && screensaverEl.style.display !== 'none') {
-                screensaverEl.style.display = 'none';
             }
-            clearTimeout(screensaverTimeout);
-            screensaverTimeout = setTimeout(showScreensaver, screensaverDelay);
-        }
+        })
+        .catch(() => document.getElementById('connStatus')?.classList.remove('active'))
+        .finally(() => setTimeout(updateDashboard, 12000));
+    }
 
-        ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
-            document.addEventListener(evt, resetScreensaverTimer, { passive: true });
+    updateDashboard();
+
+    function runMtk(cmd) {
+        switchTab('term', document.querySelectorAll('.nav-item')[4]);
+        logToTerm(`MTK: ${cmd}...`);
+        fetch(`${bridgeUrl}/mtk/${cmd}`).then(r => r.json()).then(d => {
+            if (d.output) d.output.split('\n').forEach(l => logToTerm(l, 'sys'));
         });
+    }
 
-        resetScreensaverTimer();
-    </script>
+    function runLk(cmd) {
+        switchTab('term', document.querySelectorAll('.nav-item')[4]);
+        logToTerm(`Knife: ${cmd}...`);
+        fetch(`${bridgeUrl}/lk/${cmd}`).then(r => r.json()).then(d => {
+            if (d.output) d.output.split('\n').forEach(l => logToTerm(l, 'sys'));
+        });
+    }
 
+    function runObsidian() {
+        switchTab('term', document.querySelectorAll('.nav-item')[4]);
+        logToTerm(`OBSIDIAN: Samsung FRP Bypass...`);
+        fetch(`${bridgeUrl}/obsidian/samsung-frp`).then(r => r.json()).then(d => {
+            if (d.output) d.output.split('\n').forEach(l => logToTerm(l, 'sys'));
+        }).catch(e => logToTerm("ERROR: " + e, 'sys'));
+    }
+
+    function toggleTunnel() {
+        switchTab('term', document.querySelectorAll('.nav-item')[4]);
+        logToTerm(`Toggling Tunnel Service...`);
+        fetch(`${bridgeUrl}/tunnel/toggle`, { method: 'POST' })
+            .then(r => r.json())
+            .then(d => { if (d.output) d.output.split('\n').forEach(l => logToTerm(l, 'sys')); })
+            .catch(() => logToTerm("FAILED TO TOGGLE TUNNEL", "sys"));
+    }
+
+    // Screensaver
+    let ssTimeout;
+    const ssDelay = 2 * 60 * 1000;
+    const ssEl = document.getElementById('screensaver');
+
+    function showSS() { if (ssEl) ssEl.style.display = 'flex'; }
+    function resetSS() {
+        if (ssEl?.style.display !== 'none') ssEl.style.display = 'none';
+        clearTimeout(ssTimeout);
+        ssTimeout = setTimeout(showSS, ssDelay);
+    }
+
+    ['mousemove','mousedown','keydown','touchstart','scroll'].forEach(e =>
+        document.addEventListener(e, resetSS, { passive: true })
+    );
+    resetSS();
+
+    // Enter key in terminal
+    document.getElementById('termInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') pushCmd();
+    });
+</script>
 </body>
 </html>
